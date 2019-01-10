@@ -606,7 +606,7 @@ function ShellObjectTypeConstToEnum(ShellObjectType: UINT): TShellObjectType;
 
 type
   FreePIDLProc = procedure(PIDL: PItemIDList); stdcall;
-  SHChangeIconProc = function(Wnd: THandle; szFileName: PChar; Reserved: Integer;
+  SHChangeIconProc = function(Wnd: THandle; szFileName: PAnsiChar; Reserved: Integer;
     var lpIconIndex: Integer): DWORD; stdcall;
   SHChangeIconProcW = function(Wnd: THandle; szFileName: PWideChar;
     Reserved: Integer; var lpIconIndex: Integer): DWORD; stdcall;
@@ -688,6 +688,10 @@ const
 implementation
 
 uses
+  {$IFDEF RTL250_UP}
+  AnsiStrings,
+  {$ENDIF RTL250_UP}
+  JclSysInfo,
   JvResources;
 
 const
@@ -714,7 +718,7 @@ begin
       @SHChangeIcon := GetProcAddress(ShellHandle, PAnsiChar(62));
     @SHFormatDrive := GetProcAddress(ShellHandle, PAnsiChar('SHFormatDrive'));
     @FreePIDL := GetProcAddress(ShellHandle, PAnsiChar(155));
-    if CheckWin32Version(6, 0) then
+    if JclCheckWinVersion(6, 0) then
       @SHShutDownDialog6 := GetProcAddress(ShellHandle, PAnsiChar(60))
     else
       @SHShutDownDialog := GetProcAddress(ShellHandle, PAnsiChar(60));
@@ -958,9 +962,9 @@ begin
           begin
             Icon := TIcon.Create;
             Icon.Handle := LoadIcon(FModule, MakeIntResource(AplInfo.idIcon));
-            LoadString(FModule, AplInfo.idName, Buffer, SizeOf(Buffer));
+            LoadString(FModule, AplInfo.idName, Buffer, Length(Buffer));
             Name := Buffer;
-            LoadString(FModule, AplInfo.idInfo, Buffer, SizeOf(Buffer));
+            LoadString(FModule, AplInfo.idInfo, Buffer, Length(Buffer));
             Info := Buffer;
           end;
         end;
@@ -1255,20 +1259,13 @@ end;
 
 function TJvShellAboutDialog.Execute(ParentWnd: HWND): Boolean;
 const
-  AboutText = 'JvDialogs 2.0';
   CaptionSeparator = '#';
 var
   CaptionText: string;
 begin
-  if Caption = '' then
-    CaptionText := AboutText
-  else
-    CaptionText := Caption;
+  CaptionText := Caption + CaptionSeparator + Product;
 
-  CaptionText := CaptionText + CaptionSeparator + Product;
-
-  OSCheck(LongBool(ShellAbout(ParentWnd,
-    PChar(CaptionText), PChar(OtherText), FIcon.Handle)));
+  OSCheck(LongBool(ShellAbout(ParentWnd, PChar(CaptionText), PChar(OtherText), FIcon.Handle)));
   Result := True;
 end;
 
@@ -1307,8 +1304,7 @@ begin
     if CaptionBuffer <> nil then
       StringToWideChar(FCaption, PWideChar(CaptionBuffer), Length(FCaption) + 1);
     if DescriptionBuffer <> nil then
-      StringToWideChar(FDescription, PWideChar(DescriptionBuffer),
-        Length(FDescription) + 1);
+      StringToWideChar(FDescription, PWideChar(DescriptionBuffer), Length(FDescription) + 1);
   end
   else
   begin
@@ -1353,8 +1349,7 @@ begin
     try
       if SysUtils.Win32Platform = VER_PLATFORM_WIN32_NT then
       begin
-        StringToWideChar(InitialTab, PWideChar(TabNameBuffer),
-          Length(InitialTab) + 1);
+        StringToWideChar(InitialTab, PWideChar(TabNameBuffer), Length(InitialTab) + 1);
       end
       else
       begin
@@ -1608,23 +1603,23 @@ end;
 
 function TJvChangeIconDialog.Execute(ParentWnd: HWND): Boolean;
 var
-  Buf: array [0..MAX_PATH] of Char;
+  Buf: array [0..MAX_PATH] of AnsiChar;
   BufW: array [0..MAX_PATH] of WideChar;
 begin
   if Assigned(SHChangeIconW) then
   begin
-    StringToWideChar(FileName, BufW, SizeOf(BufW));
-    Result := SHChangeIconW(ParentWnd, BufW, SizeOf(BufW), FIconIndex) = 1;
+    StringToWideChar(FileName, BufW, Length(BufW));
+    Result := SHChangeIconW(ParentWnd, BufW, Length(BufW), FIconIndex) = 1;
     if Result then
       FileName := BufW;
   end
   else
   if Assigned(SHChangeIcon) then
   begin
-    StrPCopy(Buf, FileName);
-    Result := SHChangeIcon(ParentWnd, Buf, SizeOf(Buf), FIconIndex) = 1;
+    {$IFDEF RTL250_UP}AnsiStrings.{$ENDIF}StrLCopy(Buf, PAnsiChar(AnsiString(FileName)), MAX_PATH);
+    Result := SHChangeIcon(ParentWnd, Buf, Length(Buf), FIconIndex) = 1;
     if Result then
-      FileName := Buf;
+      FileName := string(Buf);
   end
   else
     raise EWinDialogError.CreateRes(@RsENotSupported);
@@ -1656,7 +1651,7 @@ end;
 
 function TJvOpenDialog2000.Execute{$IFDEF RTL180_UP}(ParentWnd: HWND){$ENDIF RTL180_UP}: Boolean;
 begin
-  if CheckWin32Version(5, 0) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
+  if JclCheckWinVersion(5, 0) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
     Result := DoExecute(@OpenInterceptor)
   else
     Result := inherited Execute{$IFDEF RTL180_UP}(ParentWnd){$ENDIF RTL180_UP};
@@ -1666,7 +1661,7 @@ end;
 
 function TJvSaveDialog2000.Execute{$IFDEF RTL180_UP}(ParentWnd: HWND){$ENDIF RTL180_UP}: Boolean;
 begin
-  if CheckWin32Version(5, 0) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
+  if JclCheckWinVersion(5, 0) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
     Result := DoExecute(@SaveInterceptor)
   else
     Result := inherited Execute{$IFDEF RTL180_UP}(ParentWnd){$ENDIF RTL180_UP};
@@ -1700,7 +1695,7 @@ begin
     if uaRegisterAssoc in Options then
       dwFlags := dwFlags or URLASSOCDLG_FL_REGISTER_ASSOC;
     FReturnValue := URLAssociationDialog(ParentWnd, dwFlags,
-      PChar(FileName), PChar(URL), Buf, SizeOf(Buf));
+      PChar(FileName), PChar(URL), Buf, Length(Buf));
     Result := ReturnValue = S_OK;
     FAssociatedApp := Buf;
   end;
@@ -1724,7 +1719,7 @@ begin
     else
       dwFlags := 0;
     FReturnValue := MIMEAssociationDialog(ParentWnd, dwFlags,
-      PChar(FileName), PChar(ContentType), Buf, SizeOf(Buf));
+      PChar(FileName), PChar(ContentType), Buf, Length(Buf));
     Result := ReturnValue = 0;
     FAssociatedApp := Buf;
   end;

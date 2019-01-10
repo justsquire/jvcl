@@ -398,7 +398,7 @@ type
 implementation
 
 uses
-  JclFileUtils,
+  JclFileUtils, JclStrings,
   Utils, CmdLineUtils, PackageInformation, JediRegInfo;
 
 resourcestring
@@ -690,8 +690,13 @@ begin
 
   FInstallMode := [pkVcl];
   if Target.IsBDS and (Target.IDEVersion >= 5) then // Delphi 2007+ have global include path
-    FDefaultHppDir := GetJVCLDir + Format('\include\%s%d', [Target.TargetType, Target.Version]) // do not localize
+  begin
+    if Target.IDEVersion >= 11 then  // bcc64 appeared with XE3, we must distinguish output directories
+      FDefaultHppDir := GetJVCLDir + Format('\include\%s%d\%s', [Target.TargetType, Target.Version, LowerCase(Target.PlatformName)]) // do not localize
+    else
+      FDefaultHppDir := GetJVCLDir + Format('\include\%s%d', [Target.TargetType, Target.Version]) // do not localize
     //FDefaultHppDir := Target.ExpandDirMacros('$(BDSCOMMONDIR)\Hpp') // do not localize
+  end
   else
     FDefaultHppDir := Format(sBCBIncludeDir, [Target.RootDir]);
   FHppDir := FDefaultHppDir;
@@ -1431,10 +1436,7 @@ begin
     // Load jvcl%t.inc. Or the jvclbase.inc if no jvcl%t.inc exists
     if Target.IsBDS then
     begin
-      if Target.IDEVersion < 7 then
-        Version := Target.IDEVersion + 6  // BDS 3 is Delphi 9
-      else
-        Version := Target.IDEVersion + 7; // BDS 7 is Delphi 14
+      Version := Target.Version;
       if Target.PlatForm = ctpWin32 then
         Filename := GetJVCLDir + '\common\' + Format('jvcl%s%d%s.inc', // do not localize
             [LowerCase(Target.TargetType), Version, ''])
@@ -1460,6 +1462,7 @@ begin
     // set (hidden) configurations
     JVCLConfig.Enabled['DelphiPersonalEdition'] := Target.IsPersonal; // do not localize
     JVCLConfig.Enabled['JVCL_GENERATE_CPP_PACKAGE_FILES'] := Target.IsBDS and (persBCB in Target.SupportedPersonalities);
+    JVCLConfig.Enabled['USE_BDE'] := Target.HasBDE;
 
     JVCLRegistryConfig.LoadFromRegistry(Target.RegistryKey + '\Jedi\JVCL');
 
@@ -1704,6 +1707,11 @@ begin
       ['run', 'common', 'Resources', Target.InsertDirMacros(UnitOutDir)]); // do not localize, clean up because we had browsing and library path wrong
     AddPaths(Target.GlobalCppLibraryPaths, {Add:=}False, Owner.JVCLDir,
       ['Resources', Target.InsertDirMacros(UnitOutDir)]); // do not localize
+
+    // remove non suffixed hppdir as there was a time when the JVCL did not create the win32/win64 subdirs for HPP files
+    if Target.IDEVersion >= 11 then
+      AddPaths(Target.GlobalIncludePaths, {Add:=}False, Owner.JVCLDir,
+       [Target.InsertDirMacros(StrEnsureNoSuffix(DirDelimiter + LowerCase(Target.PlatformName), HppDir))]);
   end;
   Target.SavePaths;
 
@@ -1767,58 +1775,65 @@ begin
 
   FindFiles(BplDir, Mask, False, List,
     ['.bpl', '.dcp', '.lib', '.bpi', '.tds', '.map']);  // do not localize
-  if CompareText(DcpDir, BplDir) <> 0 then
+  if AnsiCompareText(DcpDir, BplDir) <> 0 then
     FindFiles(DcpDir, 'Jv*.*', False, List,             // do not localize
       ['.dcp', '.lib', '.bpi', '.lsp']);                // do not localize
   // in Default directories
-  if CompareText(BplDir, Target.BplDir) <> 0 then
+  if AnsiCompareText(BplDir, Target.BplDir) <> 0 then
     FindFiles(Target.BplDir, Mask, False, List,
       ['.bpl', '.dcp', '.lib', '.bpi', '.tds', '.map']); // do not localize
-  if (CompareText(DcpDir, BplDir) <> 0) and
-     (CompareText(DcpDir, Target.DcpDir) <> 0) then
+  if (AnsiCompareText(DcpDir, BplDir) <> 0) and
+     (AnsiCompareText(DcpDir, Target.DcpDir) <> 0) then
     FindFiles(Target.DcpDir, 'Jv*.*', False, List,       // do not localize
       ['.dcp', '.lib', '.bpi', '.lsp']);                 // do not localize
 end;
 
 function TTargetConfig.GetPathEnvVar: string;
 
-  function ShortName(const Filename: string): string;
+  function LongName(const Filename: string): string;
   begin
-    Result := ExtractShortPathName(ExcludeTrailingPathDelimiter(Filename));
-    if Result = '' then
-      Result := ExcludeTrailingPathDelimiter(Filename);
-    Result := AnsiLowerCase(Result);
+    Result := Filename;
+    if Pos('~', Filename) > 0 then
+      Result := ExcludeTrailingPathDelimiter(PathGetLongName(Filename));
+  end;
+
+  function CompareDir(Dir: string; const LongNameDir: string): Boolean;
+  begin
+    Dir := LongName(Dir);
+    Result := AnsiSameText(Dir, LongNameDir);
   end;
 
 var
   List: TStrings;
   i, k: Integer;
-  ShortDir: string;
+  Dir: string;
 begin
   List := TStringList.Create;
   try
     StrToPathList(Target.EnvPath, List);
     for i := List.Count - 1 downto 0 do
     begin
-      ShortDir := ShortName(List[i]);
       if not DirectoryExists(ExcludeTrailingPathDelimiter(List[i])) then
         List.Delete(i)
       else
+      begin
+        Dir := LongName(List[i]);
         for k := 0 to Owner.Targets.Count - 1 do
         begin
-          if (ShortName(Owner.Targets[k].BplDir) = ShortDir) or
-             (ShortName(Owner.Targets[k].DcpDir) = ShortDir) then
+          if CompareDir(Owner.Targets[k].BplDir, Dir) or
+             CompareDir(Owner.Targets[k].DcpDir, Dir) then
           begin
-            if (ShortDir <> ShortName(Target.BplDir)) and
-               (ShortDir <> ShortName(Target.DcpDir)) and
-               (ShortDir <> ShortName(BplDir)) and
-               (ShortDir <> ShortName(DcpDir)) then
+            if not CompareDir(Target.BplDir, Dir) and
+               not CompareDir(Target.DcpDir, Dir) and
+               not CompareDir(BplDir, Dir) and
+               not CompareDir(DcpDir, Dir) then
             begin
               List.Delete(i);
               Break;
             end;
           end;
         end;
+      end;
     end;
     Result := PathListToStr(List);
   finally

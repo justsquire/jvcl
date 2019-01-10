@@ -25,7 +25,6 @@ Known Issues:
 unit JvBaseDBLogonDialog;
 
 {$I jvcl.inc}
-{$DEFINE CODESITE}
 
 interface
 
@@ -228,6 +227,7 @@ type
     FOnFillDatabaseList: TJvLogonDialogFillListEvent;
     FOnFillShortcutList: TJvLogonDialogFillListEvent;
     FOnSessionConnect: TJvLogonDialogBaseSessionEvent;
+    FOnSessionDisconnect: TJvLogonDialogBaseSessionEvent;
     FOptions: TJvBaseDBLogonDialogOptions;
     GetFromListBtn: TWinControl;
     GroupByDatabaseCheckBox: TWinControl;
@@ -320,6 +320,7 @@ type
     function CreatePasswordChangeDialog: TJvBaseDBPasswordDialog; virtual;
     procedure DefaultOnEditChange(Sender: TObject);
     procedure DoSessionConnect;
+    procedure DoSessionDisconnect;
     procedure FillAdditionalPopupMenuEntries(APopupMenu: TPopupMenu); virtual;
     procedure FillAllComoboBoxes; virtual;
     procedure FillDatabaseComboBox;
@@ -365,6 +366,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure ConnectSession; virtual;
+    procedure DisconnectSession; virtual;
     function IsConnectAllowed: Boolean; virtual;
     property CurrentConnectionInfo: TJvBaseConnectionInfo read FCurrentConnectionInfo;
   published
@@ -386,6 +388,7 @@ type
     //1 Event for customizing the shortcut list
     property OnFillShortcutList: TJvLogonDialogFillListEvent read FOnFillShortcutList write FOnFillShortcutList;
     property OnSessionConnect: TJvLogonDialogBaseSessionEvent read FOnSessionConnect write FOnSessionConnect;
+    property OnSessionDisconnect: TJvLogonDialogBaseSessionEvent read FOnSessionDisconnect write FOnSessionDisconnect;
   end;
 
   TJvBaseDBOracleLogonDialog = class(TJvBaseDBLogonDialog)
@@ -618,11 +621,18 @@ procedure TJvBaseDBLogonDialog.ConnectSession;
 begin
 end;
 
+procedure TJvBaseDBLogonDialog.DisconnectSession;
+begin
+end;
+
 procedure TJvBaseDBLogonDialog.ConnectToSession;
 begin
   ValidateConnectBtnEnabled;
   if ConnectBtn.Enabled then
-    DoSessionConnect
+  begin
+    DoSessionDisconnect;
+    DoSessionConnect;
+  end
   else
     if DialogPassword = '' then
       PasswordEdit.SetFocus;
@@ -689,7 +699,11 @@ begin
   AForm.Caption := RsLogonToDatabase;
   AForm.ClientHeight := 440;
   AForm.ClientWidth := 680;
-  AForm.Position := poScreenCenter;
+  {$IFDEF COMPILER7_UP}
+  aForm.Position := poOwnerFormCenter;
+  {$ELSE}
+  aForm.Position := poScreenCenter;
+  {$ENDIF COMPILER7_UP};  
   AForm.KeyPreview := True;
   AForm.OnClose := FormClose;
   AForm.OnKeyDown := FormKeyDown;
@@ -1019,6 +1033,15 @@ begin
     ConnectSession;
   if SessionIsConnected then
     DBDialog.ModalResult := mrok;
+end;
+
+procedure TJvBaseDBLogonDialog.DoSessionDisconnect;
+begin
+  if SessionIsConnected then
+    if Assigned(OnSessionDisconnect) then
+      OnSessionDisconnect(Session)
+    else
+      DisconnectSession;
 end;
 
 function TJvBaseDBLogonDialog.EncryptPassword(const Value: string): string;

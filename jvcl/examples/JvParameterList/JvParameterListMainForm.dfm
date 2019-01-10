@@ -2,7 +2,7 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
   Left = 215
   Top = 128
   Caption = 'JvDynControlEngine / JvParameterList Sample'
-  ClientHeight = 626
+  ClientHeight = 646
   ClientWidth = 681
   Color = clBtnFace
   DefaultMonitor = dmDesktop
@@ -1689,11 +1689,6 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
       Top = 15
       Width = 272
       Height = 189
-      HotTrackFont.Charset = DEFAULT_CHARSET
-      HotTrackFont.Color = clWindowText
-      HotTrackFont.Height = -11
-      HotTrackFont.Name = 'Tahoma'
-      HotTrackFont.Style = []
       ArrangeSettings.BorderLeft = 5
       ArrangeSettings.BorderTop = 5
       ArrangeSettings.DistanceVertical = 3
@@ -1775,7 +1770,7 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
     Left = 10
     Top = 285
     Width = 361
-    Height = 336
+    Height = 353
     Caption = 'Parameterlist Test'
     TabOrder = 3
     object JvGroupBox2: TJvGroupBox
@@ -1790,11 +1785,6 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
         Top = 15
         Width = 171
         Height = 69
-        HotTrackFont.Charset = DEFAULT_CHARSET
-        HotTrackFont.Color = clWindowText
-        HotTrackFont.Height = -11
-        HotTrackFont.Name = 'Tahoma'
-        HotTrackFont.Style = []
         ArrangeSettings.BorderLeft = 5
         ArrangeSettings.BorderTop = 5
         ArrangeSettings.DistanceVertical = 3
@@ -1836,11 +1826,6 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
         Top = 15
         Width = 167
         Height = 69
-        HotTrackFont.Charset = DEFAULT_CHARSET
-        HotTrackFont.Color = clWindowText
-        HotTrackFont.Height = -11
-        HotTrackFont.Name = 'Tahoma'
-        HotTrackFont.Style = []
         ArrangeSettings.BorderLeft = 5
         ArrangeSettings.BorderTop = 5
         ArrangeSettings.DistanceVertical = 3
@@ -1882,11 +1867,6 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
         Top = 15
         Width = 347
         Height = 134
-        HotTrackFont.Charset = DEFAULT_CHARSET
-        HotTrackFont.Color = clWindowText
-        HotTrackFont.Height = -11
-        HotTrackFont.Name = 'Tahoma'
-        HotTrackFont.Style = []
         ArrangeSettings.BorderLeft = 5
         ArrangeSettings.BorderTop = 5
         ArrangeSettings.DistanceVertical = 3
@@ -1963,7 +1943,7 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
       Left = 5
       Top = 260
       Width = 176
-      Height = 65
+      Height = 76
       Caption = 'Crypted'
       TabOrder = 3
       object StaticText5: TStaticText
@@ -1984,6 +1964,48 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
         Default = True
         TabOrder = 1
         OnClick = Button14Click
+      end
+    end
+    object JvGroupBox4: TJvGroupBox
+      Left = 186
+      Top = 260
+      Width = 171
+      Height = 76
+      Caption = 'Jv Thread'
+      TabOrder = 4
+      object JvPanel5: TJvPanel
+        Left = 2
+        Top = 15
+        Width = 167
+        Height = 59
+        ArrangeSettings.BorderLeft = 5
+        ArrangeSettings.BorderTop = 5
+        ArrangeSettings.DistanceVertical = 3
+        ArrangeSettings.DistanceHorizontal = 3
+        ArrangeSettings.AutoArrange = True
+        Align = alClient
+        BevelOuter = bvNone
+        TabOrder = 0
+        object Button22: TButton
+          Left = 5
+          Top = 5
+          Width = 156
+          Height = 25
+          Caption = 'Simple'
+          Default = True
+          TabOrder = 0
+          OnClick = Button22Click
+        end
+        object Button23: TButton
+          Left = 5
+          Top = 33
+          Width = 156
+          Height = 25
+          Caption = 'Animated'
+          Default = True
+          TabOrder = 1
+          OnClick = Button23Click
+        end
       end
     end
   end
@@ -2035,11 +2057,6 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
       Top = 15
       Width = 272
       Height = 129
-      HotTrackFont.Charset = DEFAULT_CHARSET
-      HotTrackFont.Color = clWindowText
-      HotTrackFont.Height = -11
-      HotTrackFont.Name = 'Tahoma'
-      HotTrackFont.Style = []
       ArrangeSettings.BorderLeft = 5
       ArrangeSettings.BorderTop = 5
       ArrangeSettings.DistanceVertical = 3
@@ -2103,6 +2120,16 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
         Caption = 'BeforeAfterParameter'
         TabOrder = 5
         OnClick = Button20Click
+      end
+      object Button21: TButton
+        Left = 5
+        Top = 89
+        Width = 120
+        Height = 25
+        Hint = 'Demonstrates the LabelArrangeMode '
+        Caption = 'Multiple Tabs'
+        TabOrder = 6
+        OnClick = Button21Click
       end
     end
   end
@@ -2191,5 +2218,48 @@ object JvParameterListDemoMainFrm: TJvParameterListDemoMainFrm
   object Cipher: TJvVigenereCipher
     Left = 410
     Top = 55
+  end
+  object JvSimpleThread: TJvThread
+    Exclusive = True
+    MaxCount = 0
+    RunOnCreate = True
+    FreeOnTerminate = True
+    ThreadDialog = JvThreadSimpleDialog1
+    OnExecute = JvSimpleThreadExecute
+    Left = 600
+    Top = 95
+  end
+  object JvAnimatedThread: TJvThread
+    Exclusive = True
+    MaxCount = 0
+    RunOnCreate = True
+    FreeOnTerminate = True
+    ThreadDialog = JvThreadAnimateDialog1
+    OnExecute = JvAnimatedThreadExecute
+    Left = 595
+    Top = 170
+  end
+  object JvThreadAnimateDialog1: TJvThreadAnimateDialog
+    DialogOptions.FormStyle = fsNormal
+    DialogOptions.ShowDialog = True
+    DialogOptions.CancelButtonCaption = 'Cancel'
+    DialogOptions.Caption = 'Execute Thread'
+    DialogOptions.InfoText = 'Press Cancel to close the Dialog'
+    DialogOptions.CommonAVI = aviFindFile
+    Left = 640
+    Top = 200
+  end
+  object JvThreadSimpleDialog1: TJvThreadSimpleDialog
+    DialogOptions.FormStyle = fsNormal
+    DialogOptions.ShowDialog = True
+    DialogOptions.CancelButtonCaption = 'Cancel'
+    DialogOptions.Caption = 'Simple Thread Dialog'
+    DialogOptions.InfoText = 'Press Cancel to close the dialog'
+    DialogOptions.InfoTextAlignment = taCenter
+    DialogOptions.ProgressBarMarquee = True
+    DialogOptions.ProgressBarSmooth = True
+    DialogOptions.ShowProgressBar = True
+    Left = 640
+    Top = 140
   end
 end

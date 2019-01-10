@@ -2,7 +2,7 @@ JEDI Visual Component Library
 =============================
 
 JVCL is a library of over 600 Delphi visual and non-visual Delphi/C++Builder components.
-It supports Delphi/C++Builder 6 to XE4.
+It supports Delphi/C++Builder 6 and newer.
 
 The library is built upon code donated from the JEDI community. It is reformatted to achieve
 a common look-and-feel, tested and merged into the library. The library is grouped into several
@@ -28,10 +28,6 @@ How to install
 --------------
 1. Install the JCL <https://github.com/project-jedi/jcl>
 2. Start the **jvcl\install.bat**
-
-Release version
----------------
-You can download the latest released version from <https://sourceforge.net/projects/jvcl/files/>
 
 Daily snapshots
 ---------------

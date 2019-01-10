@@ -41,7 +41,7 @@ uses
   JclUnitVersioning,
   {$ENDIF UNITVERSIONING}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  ComCtrls, CommCtrl, Menus, ImgList, Clipbrd,
+  ComCtrls, CommCtrl, Menus, ImgList, Clipbrd, ListActns,
   JvJCLUtils, JvJVCLUtils, JvTypes, JvExComCtrls, JvAppStorage;
 
 type
@@ -54,6 +54,7 @@ const
 
 type
   TJvListView = class;
+  TJvListItem = class;
   {$IFNDEF RTL200_UP}
   TJvListViewGroup = class;
   {$ENDIF !RTL200_UP}
@@ -86,6 +87,8 @@ type
   TJvListItems = class(TListItems, IJvAppStorageHandler, IJvAppStoragePublishedProps)
   private
     FOwnerInterface: IInterface;
+    function GetItem(Index: Integer): TJvListItem;
+    procedure SetItem(Index: Integer; const Value: TJvListItem);
   protected
     { IInterface }
     function _AddRef: Integer; stdcall;
@@ -106,6 +109,11 @@ type
   public
     function QueryInterface(const IID: TGUID; out Obj): HRESULT; virtual; stdcall;
     procedure AfterConstruction; override;
+
+    function Add: TJvListItem;
+    function AddItem(Item: TJvListItem; Index: Integer = -1): TJvListItem;
+    function Insert(Index: Integer): TJvListItem;
+    property Item[Index: Integer]: TJvListItem read GetItem write SetItem; default;
   end;
 
   TJvListItem = class(TListItem)
@@ -393,6 +401,9 @@ type
     {$ENDIF !RTL200_UP}
     procedure TileViewPropertiesChange(Sender: TObject);
     procedure LoadTileViewProperties;
+    function AreItemsStored: Boolean;
+    function GetListItems: TJvListItems;
+    procedure SetListItems(const Value: TJvListItems);
     function GetColumnIndex(PHeader: PNMHdr): Integer;
     function GetColumnWidth(PHeader: PNMHdr): Integer;
   protected
@@ -462,6 +473,7 @@ type
     function GetInsertMarkPosition(const X, Y: Integer; var ItemIndex: Integer; var Position: TJvInsertMarkPosition): Boolean;
 
     property ItemPopup[Item: TListItem]: TPopupMenu read GetItemPopup write SetItemPopup;
+    property Items: TJvListItems read GetListItems write SetListItems stored AreItemsStored;
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
     procedure SetFocus; override;
 
@@ -539,6 +551,7 @@ uses
   AnsiStrings,
   {$ENDIF RTL250_UP}
   VarUtils, Variants,
+  JclSysInfo,
   JvConsts;
 
 type
@@ -748,7 +761,7 @@ begin
     List := Owner.Owner;
     if Assigned(List) then
     begin
-      ZeroMemory(@Infos, sizeof(Infos));
+      ZeroMemory(@Infos, SizeOf(Infos));
       Infos.mask := LVIF_GROUPID;
       Infos.iItem := Index;
       Infos.iGroupId := FGroupId;
@@ -776,33 +789,25 @@ begin
 end;
 
 procedure TJvListItem.UpdateTileColumns;
-type
-  TCardinalArray = array [0..0] of Cardinal;
 var
   List: TCustomListView;
   TileInfos: TLVTILEINFO;
-  Cols: ^TCardinalArray;
+  Cols: array of UINT;
   I: Integer;
 begin
   List := Owner.Owner;
-  if Assigned(List) then
+  if Assigned(List) and (FTileColumns.Count > 0) then
   begin
-    GetMem(Cols, FTileColumns.Count);
-    try
-      for I := 0 to FTileColumns.Count - 1 do
-      begin
-        Cols[I] := FTileColumns[I];
-      end;
+    SetLength(Cols, FTileColumns.Count);
+    for I := 0 to FTileColumns.Count - 1 do
+      Cols[I] := FTileColumns[I];
 
-      ZeroMemory(@TileInfos, SizeOf(TileInfos));
-      TileInfos.cbSize := SizeOf(TileInfos);
-      TileInfos.iItem := Index;
-      TileInfos.cColumns := FTileColumns.Count;
-      TileInfos.puColumns := PUINT(Cols);
-      SendMessage(List.Handle, LVM_SETTILEINFO, 0, LPARAM(@TileInfos));
-    finally
-      FreeMem(Cols);
-    end;
+    ZeroMemory(@TileInfos, SizeOf(TileInfos));
+    TileInfos.cbSize := SizeOf(TileInfos);
+    TileInfos.iItem := Index;
+    TileInfos.cColumns := FTileColumns.Count;
+    TileInfos.puColumns := PUINT(@Cols[0]);
+    SendMessage(List.Handle, LVM_SETTILEINFO, 0, LPARAM(@TileInfos));
   end;
 end;
 
@@ -893,6 +898,31 @@ begin
   if List is TJvListItems then
     for I := First to Last do
       Sender.DeleteValue(Sender.ConcatPaths([Path, ItemName + IntToStr(I)]));
+end;
+
+function TJvListItems.GetItem(Index: Integer): TJvListItem;
+begin
+  Result := inherited Item[Index] as TJvListItem;
+end;
+
+procedure TJvListItems.SetItem(Index: Integer; const Value: TJvListItem);
+begin
+  inherited Item[Index] := Value;
+end;
+
+function TJvListItems.Add: TJvListItem;
+begin
+  Result := inherited Add as TJvListItem;
+end;
+
+function TJvListItems.AddItem(Item: TJvListItem; Index: Integer): TJvListItem;
+begin
+  Result := inherited AddItem(Item, Index) as TJvListItem;
+end;
+
+function TJvListItems.Insert(Index: Integer): TJvListItem;
+begin
+  Result := inherited Insert(Index) as TJvListItem;
 end;
 
 { TJvListExtendedColumn }
@@ -1751,7 +1781,7 @@ begin
   FillChar(ItemInfo, SizeOf(ItemInfo), 0);
   ItemInfo.Mask := HDI_TEXT;
   ItemInfo.pszText := Buffer;
-  ItemInfo.cchTextMax := SizeOf(Buffer) - 1;
+  ItemInfo.cchTextMax := Length(Buffer) - 1;
   Header_GetItem(HwndHeader, ItemIndex, ItemInfo);
   if CompareStr(Columns[ItemIndex].Caption, ItemInfo.pszText) = 0 then
   begin
@@ -2249,7 +2279,7 @@ begin
     Canvas.Font := TJvListItem(Item).Font;
     if ViewStyle in ViewStylesItemBrush then
     begin
-      if CheckWin32Version(6, 0) then
+      if JclCheckWinVersion(6, 0) then
         SetBkMode(Canvas.Handle, TRANSPARENT);
       Canvas.Brush := TJvListItem(Item).Brush;
     end;
@@ -2506,6 +2536,24 @@ begin
       FSettingJvViewStyle := False;
     end;
   end;
+end;
+
+function TJvListView.AreItemsStored: Boolean;
+begin
+  if Action <> nil then
+    Result := not (Action is TCustomListAction)
+  else
+    Result := not OwnerData;
+end;
+
+function TJvListView.GetListItems: TJvListItems;
+begin
+  Result := inherited Items as TJvListItems;
+end;
+
+procedure TJvListView.SetListItems(const Value: TJvListItems);
+begin
+  inherited Items := Value;
 end;
 
 procedure TJvListView.SetLastSortedColumnIndex(const Value: Integer);

@@ -3,8 +3,8 @@
 ; CONDITIONAL COMPILATION
 ;    Include_Binaries    Create an installer that can install a precompiled JVCL
 ;    Include_Examples    Add the Examples directory to the installer (user can then select the component)
-;    DEBUGGING           Development. Will only use Delphi 5 BPLs as files with a fast compression (script debugging)
-;    Include_DelphiX     Include the binaries for Delphi X (X in 5..12)
+;    DEBUGGING           Development. Fast compression (script debugging)
+;    Include_DelphiX     Include the binaries for Delphi X (X in 6..26)
 
 #ifndef CmdLineBuild
 #define JvclRoot "..\.."
@@ -24,7 +24,7 @@
 #define MyAppName "JEDI Visual Component Library"
 #define MyAppVerName "JEDI Visual Component Library " + JvclVersionStr
 #define MyAppPublisher "JVCL Team"
-#define MyAppURL "http://jvcl.sourceforge.net"
+#define MyAppURL "https://github.com/project-jedi/jvcl"
 
 ;---------------------------------------------------
 ; Setup the preprocessor defines for the binary files
@@ -60,7 +60,30 @@
 #define JvclLib18    JvclLib
 #define   JvclBpl18  JvclBpl
 #define   JvclHpp18  JvclHpp
-
+#define JvclLib19    JvclLib
+#define   JvclBpl19  JvclBpl
+#define   JvclHpp19  JvclHpp
+#define JvclLib20    JvclLib
+#define   JvclBpl20  JvclBpl
+#define   JvclHpp20  JvclHpp
+#define JvclLib21    JvclLib
+#define   JvclBpl21  JvclBpl
+#define   JvclHpp21  JvclHpp
+#define JvclLib22    JvclLib
+#define   JvclBpl22  JvclBpl
+#define   JvclHpp22  JvclHpp
+#define JvclLib23    JvclLib
+#define   JvclBpl23  JvclBpl
+#define   JvclHpp23  JvclHpp
+#define JvclLib24    JvclLib
+#define   JvclBpl24  JvclBpl
+#define   JvclHpp24  JvclHpp
+#define JvclLib25    JvclLib
+#define   JvclBpl25  JvclBpl
+#define   JvclHpp25  JvclHpp
+#define JvclLib26    JvclLib
+#define   JvclBpl26  JvclBpl
+#define   JvclHpp26  JvclHpp
 #endif
 
 ;---------------------------------------------------
@@ -139,7 +162,9 @@ Name: "Packages\JvWizards"; Description: "Wizard Controls"; Types: full prefered
 
 Name: "Packages\DB"; Description: "Database Packages"
 Name: "Packages\DB\JvDB"; Description: "DB-Aware Controls (Grids, Lookups, ComboBox, TreeViews, Edits)"; Types: full prefered
+#ifdef BDESupport
 Name: "Packages\DB\JvBDE"; Description: "BDE Component"; Types: full
+#endif
 
 Name: "Packages\JvMM"; Description: "Multimedia and Images (Animated Images, ID3v1, WavePlayer, WaitingProgress)"; Types: full
 Name: "Packages\JvTimeFramework"; Description: "Time Framework Controls"; Types: full
@@ -210,7 +235,54 @@ Name: "{app}\lib\d18\win32"
 Name: "{app}\lib\d18\win32\debug"
 Name: "{app}\lib\d18\win64"
 Name: "{app}\lib\d18\win64\debug"
-
+; XE5
+Name: "{app}\lib\d19"
+Name: "{app}\lib\d19\win32"
+Name: "{app}\lib\d19\win32\debug"
+Name: "{app}\lib\d19\win64"
+Name: "{app}\lib\d19\win64\debug"
+; XE6
+Name: "{app}\lib\d20"
+Name: "{app}\lib\d20\win32"
+Name: "{app}\lib\d20\win32\debug"
+Name: "{app}\lib\d20\win64"
+Name: "{app}\lib\d20\win64\debug"
+; XE7
+Name: "{app}\lib\d21"
+Name: "{app}\lib\d21\win32"
+Name: "{app}\lib\d21\win32\debug"
+Name: "{app}\lib\d21\win64"
+Name: "{app}\lib\d21\win64\debug"
+; XE8
+Name: "{app}\lib\d22"
+Name: "{app}\lib\d22\win32"
+Name: "{app}\lib\d22\win32\debug"
+Name: "{app}\lib\d22\win64"
+Name: "{app}\lib\d22\win64\debug"
+; 10 Seattle
+Name: "{app}\lib\d23"
+Name: "{app}\lib\d23\win32"
+Name: "{app}\lib\d23\win32\debug"
+Name: "{app}\lib\d23\win64"
+Name: "{app}\lib\d23\win64\debug"
+; 10.1 Berlin
+Name: "{app}\lib\d24"
+Name: "{app}\lib\d24\win32"
+Name: "{app}\lib\d24\win32\debug"
+Name: "{app}\lib\d24\win64"
+Name: "{app}\lib\d24\win64\debug"
+; 10.2 Tokyo
+Name: "{app}\lib\d25"
+Name: "{app}\lib\d25\win32"
+Name: "{app}\lib\d25\win32\debug"
+Name: "{app}\lib\d25\win64"
+Name: "{app}\lib\d25\win64\debug"
+; 10.3 Rio
+Name: "{app}\lib\d26"
+Name: "{app}\lib\d26\win32"
+Name: "{app}\lib\d26\win32\debug"
+Name: "{app}\lib\d26\win64"
+Name: "{app}\lib\d26\win64\debug"
 
 [Files]
 Source: {#JvclRoot}\*; DestDir: "{app}"; Excludes: ".git"; Flags: ignoreversion
@@ -306,6 +378,62 @@ Source: {#JvclLib18}\*; DestDir: "{app}\lib\d18"; Excludes: "__history,*.txt"; C
 Source: {#JvclBpl18}\*; DestDir: "{code:GetDelphiBplDir|18}"; Components: "IDE\Delphi18"; Flags: ignoreversion sortfilesbyextension
 Source: {#JvclBpl18}\Win64\*; DestDir: "{code:GetDelphiBplDir|18}\Win64"; Components: "IDE\Delphi18"; Flags: ignoreversion sortfilesbyextension
 Source: {#JvclHpp18}\*; DestDir: "{app}\include\d18"; Components: "IDE\Delphi18"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi19
+; SolidBreak; lib\Delphi XE5
+Source: {#JvclLib19}\*; DestDir: "{app}\lib\d19"; Excludes: "__history,*.txt"; Components: "IDE\Delphi19"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl19}\*; DestDir: "{code:GetDelphiBplDir|19}"; Components: "IDE\Delphi19"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl19}\Win64\*; DestDir: "{code:GetDelphiBplDir|19}\Win64"; Components: "IDE\Delphi19"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp19}\*; DestDir: "{app}\include\d19"; Components: "IDE\Delphi19"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi20
+; SolidBreak; lib\Delphi XE6
+Source: {#JvclLib20}\*; DestDir: "{app}\lib\d20"; Excludes: "__history,*.txt"; Components: "IDE\Delphi20"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl20}\*; DestDir: "{code:GetDelphiBplDir|20}"; Components: "IDE\Delphi20"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl20}\Win64\*; DestDir: "{code:GetDelphiBplDir|20}\Win64"; Components: "IDE\Delphi20"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp20}\*; DestDir: "{app}\include\d20"; Components: "IDE\Delphi20"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi21
+; SolidBreak; lib\Delphi XE7
+Source: {#JvclLib21}\*; DestDir: "{app}\lib\d21"; Excludes: "__history,*.txt"; Components: "IDE\Delphi21"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl21}\*; DestDir: "{code:GetDelphiBplDir|21}"; Components: "IDE\Delphi21"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl21}\Win64\*; DestDir: "{code:GetDelphiBplDir|21}\Win64"; Components: "IDE\Delphi21"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp21}\*; DestDir: "{app}\include\d21"; Components: "IDE\Delphi21"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi22
+; SolidBreak; lib\Delphi XE8
+Source: {#JvclLib22}\*; DestDir: "{app}\lib\d22"; Excludes: "__history,*.txt"; Components: "IDE\Delphi22"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl22}\*; DestDir: "{code:GetDelphiBplDir|22}"; Components: "IDE\Delphi22"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl22}\Win64\*; DestDir: "{code:GetDelphiBplDir|22}\Win64"; Components: "IDE\Delphi22"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp22}\*; DestDir: "{app}\include\d22"; Components: "IDE\Delphi22"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi23
+; SolidBreak; lib\Delphi 10
+Source: {#JvclLib23}\*; DestDir: "{app}\lib\d23"; Excludes: "__history,*.txt"; Components: "IDE\Delphi23"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl23}\*; DestDir: "{code:GetDelphiBplDir|23}"; Components: "IDE\Delphi23"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl23}\Win64\*; DestDir: "{code:GetDelphiBplDir|23}\Win64"; Components: "IDE\Delphi23"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp23}\*; DestDir: "{app}\include\d23"; Components: "IDE\Delphi23"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi24
+; SolidBreak; lib\Delphi 10.1
+Source: {#JvclLib24}\*; DestDir: "{app}\lib\d24"; Excludes: "__history,*.txt"; Components: "IDE\Delphi24"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl24}\*; DestDir: "{code:GetDelphiBplDir|24}"; Components: "IDE\Delphi24"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl24}\Win64\*; DestDir: "{code:GetDelphiBplDir|24}\Win64"; Components: "IDE\Delphi24"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp24}\*; DestDir: "{app}\include\d24"; Components: "IDE\Delphi24"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi25
+; SolidBreak; lib\Delphi 10.2
+Source: {#JvclLib25}\*; DestDir: "{app}\lib\d25"; Excludes: "__history,*.txt"; Components: "IDE\Delphi25"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl25}\*; DestDir: "{code:GetDelphiBplDir|25}"; Components: "IDE\Delphi25"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl25}\Win64\*; DestDir: "{code:GetDelphiBplDir|25}\Win64"; Components: "IDE\Delphi25"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp25}\*; DestDir: "{app}\include\d25"; Components: "IDE\Delphi25"; Flags: ignoreversion sortfilesbyextension
+#endif
+#ifdef Include_Delphi26
+; SolidBreak; lib\Delphi 10.3
+Source: {#JvclLib26}\*; DestDir: "{app}\lib\d26"; Excludes: "__history,*.txt"; Components: "IDE\Delphi26"; Flags: ignoreversion recursesubdirs sortfilesbyextension createallsubdirs solidbreak
+Source: {#JvclBpl26}\*; DestDir: "{code:GetDelphiBplDir|26}"; Components: "IDE\Delphi26"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclBpl26}\Win64\*; DestDir: "{code:GetDelphiBplDir|26}\Win64"; Components: "IDE\Delphi26"; Flags: ignoreversion sortfilesbyextension
+Source: {#JvclHpp26}\*; DestDir: "{app}\include\d26"; Components: "IDE\Delphi26"; Flags: ignoreversion sortfilesbyextension
 #endif
 
 #endif
@@ -411,6 +539,85 @@ Root: HKCU; Subkey: "{code:GetDelphiRegKey|18}\Jedi\JVCL"; ValueType: string; Va
 Root: HKCU; Subkey: "{code:GetDelphiRegKey|18}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
 Root: HKCU; Subkey: "{code:GetDelphiRegKey|18}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi18";
 #endif
+#ifdef Include_Delphi19
+; Delphi XE5
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|19}; Components: "IDE\Delphi19"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d19; Components: "IDE\Delphi19"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi19"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi19"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|19}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi19";
+#endif
+
+#ifdef Include_Delphi20
+; Delphi XE6
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|20}; Components: "IDE\Delphi20"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d20; Components: "IDE\Delphi20"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi20"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi20"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|20}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi20";
+#endif
+
+#ifdef Include_Delphi21
+; Delphi XE7
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|21}; Components: "IDE\Delphi21"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d21; Components: "IDE\Delphi21"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi21"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi21"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|21}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi21";
+#endif
+
+#ifdef Include_Delphi22
+; Delphi XE8
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|22}; Components: "IDE\Delphi22"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d22; Components: "IDE\Delphi22"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi22"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi22"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|22}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi22";
+#endif
+
+#ifdef Include_Delphi23
+; Delphi 10
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|23}; Components: "IDE\Delphi23"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d23; Components: "IDE\Delphi23"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi23"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi23"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|23}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi23";
+#endif
+
+#ifdef Include_Delphi24
+; Delphi 10.1
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|24}; Components: "IDE\Delphi24"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d24; Components: "IDE\Delphi24"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi24"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi24"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|24}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi24";
+#endif
+
+#ifdef Include_Delphi25
+; Delphi 10.2
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|25}; Components: "IDE\Delphi25"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d25; Components: "IDE\Delphi25"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi25"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi25"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|25}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi25";
+#endif
+
+#ifdef Include_Delphi26
+; Delphi 10.3
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Jedi\JVCL"; ValueType: string; ValueName: "BplDir"; ValueData: {code:GetDelphiBplDir|26}; Components: "IDE\Delphi26"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Jedi\JVCL"; ValueType: string; ValueName: "DcpDir"; ValueData: {app}\lib\d26; Components: "IDE\Delphi26"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Jedi\JVCL"; ValueType: string; ValueName: "RootDir"; ValueData: {app}; Components: "IDE\Delphi26"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Jedi\JVCL"; ValueType: string; ValueName: "Version"; ValueData: {#JvclVersionStr}; Components: "IDE\Delphi26"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Jedi\JVCL\IDE"; ValueType: dword; ValueName: "RegisterGlobalDesignEditors"; ValueData: 1; Components: "Options\RegisterGlobalDesignEditors"; Flags: uninsdeletevalue;
+Root: HKCU; Subkey: "{code:GetDelphiRegKey|26}\Globals"; ValueType: string; ValueName: "ForceEnvOptionsUpdate"; ValueData: "1"; Components: "IDE\Delphi26";
+#endif
 
 #endif
 
@@ -486,6 +693,70 @@ Type: files; Name: "{app}\lib\d18\win64\debug\*"
 Type: files; Name: "{app}\include\d18\*"
 Type: files; Name: "{code:GetDelphiBplDir|18}\Jv*.*"
 Type: files; Name: "{code:GetDelphiBplDir|18}\Win64\Jv*.*"
+; lib\Delphi/C++Builder XE5
+Type: files; Name: "{app}\lib\d19\win32\*"
+Type: files; Name: "{app}\lib\d19\win32\debug\*"
+Type: files; Name: "{app}\lib\d19\win64\*"
+Type: files; Name: "{app}\lib\d19\win64\debug\*"
+Type: files; Name: "{app}\include\d19\*"
+Type: files; Name: "{code:GetDelphiBplDir|19}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|19}\Win64\Jv*.*"
+; lib\Delphi/C++Builder XE6
+Type: files; Name: "{app}\lib\d20\win32\*"
+Type: files; Name: "{app}\lib\d20\win32\debug\*"
+Type: files; Name: "{app}\lib\d20\win64\*"
+Type: files; Name: "{app}\lib\d20\win64\debug\*"
+Type: files; Name: "{app}\include\d20\*"
+Type: files; Name: "{code:GetDelphiBplDir|20}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|20}\Win64\Jv*.*"
+; lib\Delphi/C++Builder XE7
+Type: files; Name: "{app}\lib\d21\win32\*"
+Type: files; Name: "{app}\lib\d21\win32\debug\*"
+Type: files; Name: "{app}\lib\d21\win64\*"
+Type: files; Name: "{app}\lib\d21\win64\debug\*"
+Type: files; Name: "{app}\include\d21\*"
+Type: files; Name: "{code:GetDelphiBplDir|21}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|21}\Win64\Jv*.*"
+; lib\Delphi/C++Builder XE8
+Type: files; Name: "{app}\lib\d22\win32\*"
+Type: files; Name: "{app}\lib\d22\win32\debug\*"
+Type: files; Name: "{app}\lib\d22\win64\*"
+Type: files; Name: "{app}\lib\d22\win64\debug\*"
+Type: files; Name: "{app}\include\d22\*"
+Type: files; Name: "{code:GetDelphiBplDir|22}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|22}\Win64\Jv*.*"
+; lib\Delphi/C++Builder 10 Seattle
+Type: files; Name: "{app}\lib\d23\win32\*"
+Type: files; Name: "{app}\lib\d23\win32\debug\*"
+Type: files; Name: "{app}\lib\d23\win64\*"
+Type: files; Name: "{app}\lib\d23\win64\debug\*"
+Type: files; Name: "{app}\include\d23\*"
+Type: files; Name: "{code:GetDelphiBplDir|23}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|23}\Win64\Jv*.*"
+; lib\Delphi/C++Builder 10.1 Berlin
+Type: files; Name: "{app}\lib\d24\win32\*"
+Type: files; Name: "{app}\lib\d24\win32\debug\*"
+Type: files; Name: "{app}\lib\d24\win64\*"
+Type: files; Name: "{app}\lib\d24\win64\debug\*"
+Type: files; Name: "{app}\include\d24\*"
+Type: files; Name: "{code:GetDelphiBplDir|24}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|24}\Win64\Jv*.*"
+; lib\Delphi/C++Builder 10.2
+Type: files; Name: "{app}\lib\d25\win32\*"
+Type: files; Name: "{app}\lib\d25\win32\debug\*"
+Type: files; Name: "{app}\lib\d25\win64\*"
+Type: files; Name: "{app}\lib\d25\win64\debug\*"
+Type: files; Name: "{app}\include\d25\*"
+Type: files; Name: "{code:GetDelphiBplDir|25}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|25}\Win64\Jv*.*"
+; lib\Delphi/C++Builder 10.3
+Type: files; Name: "{app}\lib\d26\win32\*"
+Type: files; Name: "{app}\lib\d26\win32\debug\*"
+Type: files; Name: "{app}\lib\d26\win64\*"
+Type: files; Name: "{app}\lib\d26\win64\debug\*"
+Type: files; Name: "{app}\include\d26\*"
+Type: files; Name: "{code:GetDelphiBplDir|26}\Jv*.*"
+Type: files; Name: "{code:GetDelphiBplDir|26}\Win64\Jv*.*"
 
 [Icons]
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"

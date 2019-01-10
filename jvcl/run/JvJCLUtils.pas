@@ -86,6 +86,18 @@ type
   {$EXTERNALSYM DWORD_PTR}
   DWORD_PTR = ULONG_PTR;
 
+const
+  GWLP_WNDPROC    = -4;
+  {$EXTERNALSYM GWLP_WNDPROC}
+  GWLP_HINSTANCE  = -6;
+  {$EXTERNALSYM GWLP_HINSTANCE}
+  GWLP_HWNDPARENT = -8;
+  {$EXTERNALSYM GWLP_HWNDPARENT}
+  GWLP_USERDATA   = -21;
+  {$EXTERNALSYM GWLP_USERDATA}
+  GWLP_ID         = -12;
+  {$EXTERNALSYM GWLP_ID}
+
 {$EXTERNALSYM GetWindowLongPtr}
 function GetWindowLongPtr(hWnd: HWND; nIndex: Integer): LONG_PTR; stdcall;
 {$EXTERNALSYM SetWindowLongPtr}
@@ -1453,7 +1465,7 @@ end;
 function GetWordOnPos2(const S: string; P: Integer; var iBeg, iEnd: Integer): string;
 begin
   Result := '';
-  if P < 1 then
+  if (P > Length(S)) or (P < 1) then
     Exit;
   if CharInSet(S[P], Separators) and ((P < 1) or CharInSet(S[P - 1], Separators)) then
     Inc(P);
@@ -1479,7 +1491,7 @@ end;
 function GetWordOnPos2W(const S: WideString; P: Integer; var iBeg, iEnd: Integer): WideString;
 begin
   Result := '';
-  if P < 1 then
+  if (P > Length(S)) or (P < 1) then
     Exit;
   if CharInSetW(S[P], Separators) and
     ((P < 1) or (CharInSetW(S[P - 1], Separators))) then
@@ -4808,7 +4820,7 @@ var
 begin
   DateTimeToSystemTime(Value, SystemTime);
   SetString(Result, Buffer, GetDateFormat(GetThreadLocale, DATE_LONGDATE,
-    @SystemTime, nil, Buffer, SizeOf(Buffer) - 1));
+    @SystemTime, nil, Buffer, Length(Buffer) - 1));
   Result := TrimRight(Result);
 end;
 {$ENDIF MSWINDOWS}
@@ -5979,16 +5991,16 @@ end;
 
 function GetWindowsDir: string;
 var
-  Buffer: array [0..MAX_PATH] of Char;
+  Buffer: array [0..MAX_PATH - 1] of Char;
 begin
-  SetString(Result, Buffer, GetWindowsDirectory(Buffer, SizeOf(Buffer)));
+  SetString(Result, Buffer, GetWindowsDirectory(Buffer, Length(Buffer) - 1));
 end;
 
 function GetSystemDir: string;
 var
-  Buffer: array [0..MAX_PATH] of Char;
+  Buffer: array [0..MAX_PATH - 1] of Char;
 begin
-  SetString(Result, Buffer, GetSystemDirectory(Buffer, SizeOf(Buffer)));
+  SetString(Result, Buffer, GetSystemDirectory(Buffer, Length(Buffer) - 1));
 end;
 
 {$ENDIF MSWINDOWS}
@@ -6584,7 +6596,11 @@ begin
   LastError := GetLastError;
   if LastError <> 0 then
   begin
+    {$IFDEF RTL240_UP} // XE3+
+    St := SysUtils.Format(SOSError, [LastError, SysErrorMessage(LastError), '']);
+    {$ELSE}
     St := SysUtils.Format(SOSError, [LastError, SysErrorMessage(LastError)]);
+    {$ENDIF RTL_UP}
     if Text <> '' then
       St := Text + ':' + St;
     raise EOSError.Create(St);
@@ -6711,7 +6727,7 @@ begin
   Child := GetWindow(Tray, GW_CHILD);
   while Child <> 0 do
   begin
-    if GetClassName(Child, C, SizeOf(C)) > 0 then
+    if GetClassName(Child, C, Length(C)) > 0 then
     begin
       S := StrPas(C);
       if UpperCase(S) = 'BUTTON' then
@@ -6883,11 +6899,10 @@ var
 begin
   if Windows.IsWindowVisible(Handle) then
   begin
-    GetWindowText(Handle, St, SizeOf(St));
+    GetWindowText(Handle, St, Length(St));
     St2 := St;
     if St2 <> '' then
-      with TStrings(LParam) do
-        AddObject(St2, TObject(Handle));
+      TStrings(LParam).AddObject(St2, TObject(Handle));
   end;
   Result := True;
 end;
@@ -7859,10 +7874,8 @@ function WindowClassName(Wnd: THandle): string;
 var
   Buffer: array [0..255] of Char;
 begin
-  SetString(Result, Buffer, GetClassName(Wnd, Buffer, SizeOf(Buffer) - 1));
+  SetString(Result, Buffer, GetClassName(Wnd, Buffer, Length(Buffer) - 1));
 end;
-
-
 
 function GetAnimation: Boolean;
 var
@@ -7912,7 +7925,7 @@ end;
 
 function GetWindowParent(Wnd: THandle): THandle;
 begin
-  Result := THandle(GetWindowLongPtr(Wnd, GWL_HWNDPARENT));
+  Result := THandle(GetWindowLongPtr(Wnd, GWLP_HWNDPARENT));
 end;
 
 procedure ActivateWindow(Wnd: THandle);
@@ -8157,22 +8170,17 @@ begin
   AntiAliasRect(Clip, 0, 0, Clip.Width, Clip.Height);
 end;
 
-
-  // (p3) duplicated from JvTypes to avoid JVCL dependencies
+procedure AntiAliasRect(Clip: TBitmap; XOrigin, YOrigin, XFinal, YFinal: Integer);
 type
+  // (p3) duplicated from JvTypes to avoid JVCL dependencies
   TJvRGBTriple = packed record
     rgbBlue: Byte;
     rgbGreen: Byte;
     rgbRed: Byte;
   end;
 
-type
   PJvRGBArray = ^TJvRGBArray;
-  TJvRGBArray = array [0..32766] of TJvRGBTriple;
-
-
-procedure AntiAliasRect(Clip: TBitmap;
-  XOrigin, YOrigin, XFinal, YFinal: Integer);
+  TJvRGBArray = array [0..MaxInt div SizeOf(TJvRGBTriple) - 1] of TJvRGBTriple;
 var
   Tmp, X, Y: Integer;
   Line0, Line1, Line2: PJvRGBArray;
@@ -8199,6 +8207,7 @@ begin
   Clip.PixelFormat := pf24bit;
   for Y := YOrigin to YFinal do
   begin
+{$RANGECHECKS OFF}
     Line0 := Clip.ScanLine[Y - 1];
     Line1 := Clip.ScanLine[Y];
     Line2 := Clip.ScanLine[Y + 1];
@@ -8209,6 +8218,9 @@ begin
         4;
       Line1[X].rgbBlue := (Line0[X].rgbBlue + Line2[X].rgbBlue + Line1[X - 1].rgbBlue + Line1[X + 1].rgbBlue) div 4;
     end;
+{$IFDEF RANGECHECKS_ON}
+{$RANGECHECKS ON}
+{$ENDIF RANGECHECKS_ON}
   end;
   Clip.PixelFormat := OPF;
 end;

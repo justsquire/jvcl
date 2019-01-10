@@ -335,7 +335,14 @@ type
     hoPreserveHeight,   // don't change HotTrackFont.Height (affects Size as well)
     hoPreserveName,     // don't change HotTrackFont.Name
     hoPreservePitch,    // don't change HotTrackFont.Pitch
-    hoPreserveStyle);   // don't change HotTrackFont.Style
+    hoPreserveStyle     // don't change HotTrackFont.Style
+    {$IFDEF COMPILER10_UP}
+    , hoPreserveOrientation // don't change HotTrackFont.Orientation
+    {$ENDIF COMPILER10_UP}
+    {$IFDEF COMPILER15_UP}
+    , hoPreserveQuality // don't change HotTrackFont.Quality
+    {$ENDIF COMPILER15_UP}
+  );
   TJvTrackFontOptions = set of TJvTrackFontOption;
 
 const
@@ -643,7 +650,7 @@ begin
     ThreadNameInfo.FFlags := 0;
 
     try
-      RaiseException($406D1388, 0, sizeof(ThreadNameInfo) div sizeof(LongWord), @ThreadNameInfo);
+      RaiseException($406D1388, 0, SizeOf(ThreadNameInfo) div SizeOf(LongWord), @ThreadNameInfo);
     except
     end;
   end;

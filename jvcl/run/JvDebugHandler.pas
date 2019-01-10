@@ -77,17 +77,17 @@
                    of any logfile for this project already in existance.  If one doesn't
                    yet exist, it will be created.  Each new exception logged will appear
                    above the last and seperated by two blank lines.
-   OnOtherDestination event:  is the only event provided.  When assigned, by double-
+   OnOtherDestination/OnException event:  are the only events provided.  When assigned, by double-
                    clicking it in the object inspector, a procedure of this name will
                    be created for you in your mainform's unit.  Any code you write here
                    will be run immeadiatly upon any exception information being generated,
                    before and completely independant of the component's own logfile and
                    whether or not "CreateLogFile" is set to True or False.
-                   From here you may access the "ExceptionSgtringList" which holds this
+                   From here you may access the "ExceptionStringList" which holds this
                    information and do with it as wanted.  You may for example, have the
                    "ExceptionStringList" saved to another logfile, or to another utility
                    application such as CodeSite.
-                   Please note that thwe "ExceptionStringList" is created and freed
+                   Please note that the "ExceptionStringList" is created and freed
                    properly by the component itself...you need only access it if wanted.
                    Also note that even though "AppendLogFile" may be set to True, this
                    property ONLY applies to the component's own logfile.  When the
@@ -126,37 +126,39 @@ uses
   {$IFDEF UNITVERSIONING}
   JclUnitVersioning,
   {$ENDIF UNITVERSIONING}
-  SysUtils, Classes, Forms,
+  SysUtils, Classes, Forms, AppEvnts,
   JclDebug, JclHookExcept,
-  JvComponentBase,
-  AppEvnts;
+  JvComponentBase;
 
 type
   {$IFDEF RTL230_UP}
-  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidOSX32)]
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64)]
   {$ENDIF RTL230_UP}
   TJvDebugHandler = class(TJvComponent)
   private
     FExceptionLogging: Boolean;
-    FAppEvents: TApplicationEvents;
     FStackTrackingEnable: Boolean;
     FUnhandledExceptionsOnly: Boolean;
     FLogToFile: Boolean;
-    FName: string;
     FAppendLogFile: Boolean;
     FIsLoaded: Boolean;
+    FAppEvents: TApplicationEvents;
+    FExceptionStringList: TStrings;
+    FName: string;
 
     FOnOtherDestination: TNotifyEvent;
+    FOnException: TExceptionEvent;
+
     procedure SetUnhandled(Value: Boolean);
-    procedure HandleUnKnownException(Sender: TObject; E: Exception);
+    procedure HandleUnknownException(Sender: TObject; E: Exception);
     procedure SetStackTracking(Value: Boolean);
     procedure ExceptionNotifier(ExceptObj: TObject; ExceptAddr: Pointer; OSException: Boolean);
   protected
     procedure Loaded; override;
   public
-    ExceptionStringList: TStringList;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    property ExceptionStringList: TStrings read FExceptionStringList;
   published
     property ExceptionLogging: Boolean read FExceptionLogging write FExceptionLogging default True;
     property StackTrackingEnable: Boolean read FStackTrackingEnable write SetStackTracking default True;
@@ -165,6 +167,7 @@ type
     property LogFileName: string read FName write FName;
     property AppendLogFile: Boolean read FAppendLogFile write FAppendLogFile default True;
     property OnOtherDestination: TNotifyEvent read FOnOtherDestination write FOnOtherDestination;
+    property OnException: TExceptionEvent read FOnException write FOnException;
   end;
 
 {$IFDEF UNITVERSIONING}
@@ -179,6 +182,7 @@ const
 
 implementation
 
+{ TJvDebugHandler }
 
 constructor TJvDebugHandler.Create(AOwner: TComponent);
 begin
@@ -199,7 +203,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TJvDebugHandler.HandleUnKnownException(Sender: TObject; E: Exception);
+procedure TJvDebugHandler.HandleUnknownException(Sender: TObject; E: Exception);
 begin
   ExceptionNotifier(E, ExceptAddr, False);
 end;
@@ -243,7 +247,7 @@ procedure TJvDebugHandler.ExceptionNotifier(ExceptObj: TObject; ExceptAddr: Poin
   OSException: Boolean);
 var
   I: Integer;
-  PreviousExceptionStringList: TStringList;
+  PreviousExceptionStringList: TStrings;
   FileName: string;
   UnitName: string;
   ProcedureName: string;
@@ -256,7 +260,7 @@ begin
   Loc := '';
   if FExceptionLogging and not (csDesigning in ComponentState) then
   begin
-    ExceptionStringList := TStringList.Create;
+    FExceptionStringList := TStringList.Create;
     try
       // (rom) literals instead of resourcestrings are acceptable here
       if MapOfAddr(ExceptAddr, FileName, UnitName, ProcedureName, Line) then
@@ -264,8 +268,7 @@ begin
       else
         Loc := Format('at address %p', [ExceptAddr]);
 
-      ExceptionStringList.Add(DateTimeToStr(now) + ' Exception ' +
-        ExceptObj.ClassName + ' occured ' + Loc);
+      ExceptionStringList.Add(DateTimeToStr(Now) + ' Exception ' + ExceptObj.ClassName + ' occurred ' + Loc);
       if ExceptObj is Exception then
         ExceptionStringList.Add('Message: ' + Exception(ExceptObj).Message);
 
@@ -303,12 +306,17 @@ begin
         end;
       end;
 
-      if Assigned(FOnOtherDestination) Then
-        FOnOtherDestination(Self)
+      if Assigned(FOnException) or Assigned(FOnOtherDestination) then
+      begin
+        if Assigned(FOnOtherDestination) Then
+          FOnOtherDestination(Self);
+        if Assigned(FOnException) then
+          FOnException(Self, Exception(ExceptObj));
+      end
       else
         Application.ShowException(Exception(ExceptObj));
     finally
-      ExceptionStringList.Free;
+      FreeAndNil(FExceptionStringList);
     end;
   end;
 end;

@@ -196,11 +196,11 @@ type
     procedure WndProc(var Msg: TMessage);
     property Handle: THandle read GetHandle;
     procedure CloseRead;
-    procedure CloseWrite;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function CloseApplication(SendQuit: Boolean = False): Boolean;
+    procedure CloseWrite;
     procedure Run;
     procedure StopWaiting;
     procedure Terminate;
@@ -361,7 +361,7 @@ end;
 
 function IsConsoleWindow(AHandle: THandle): Boolean;
 begin
-  Result := THandle(GetWindowLongPtr(AHandle, GWL_HINSTANCE)) = WinSrvHandle;
+  Result := THandle(GetWindowLongPtr(AHandle, GWLP_HINSTANCE)) = WinSrvHandle;
 end;
 
 type
@@ -1024,7 +1024,9 @@ var
   BytesWritten: Cardinal;
   BytesToWrite: Cardinal;
 begin
+  {$IFNDEF COMPILER25_UP}
   Result := True;
+  {$ENDIF ~COMPILER25_UP}
 
   FWriteLock.Acquire;
   try

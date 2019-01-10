@@ -1989,6 +1989,7 @@ end;
 procedure TJvDynControlCxCheckBox.ControlSetDefaultProperties;
 begin
   Transparent := True;
+  AutoSize := False;
 end;
 
 procedure TJvDynControlCxCheckBox.ControlSetReadOnly(Value: Boolean);

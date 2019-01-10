@@ -114,6 +114,7 @@ type
   public
     procedure ClearControlInterfaceObjects; override;
     procedure ConnectSession; override;
+    procedure DisconnectSession; override;
     function SessionIsConnected: Boolean; override;
   published
     property Options: TJvDBOdacLogonDialogOptions read GetOptions write SetOptions;
@@ -148,11 +149,13 @@ const
 
 implementation
 
+{$DEFINE ODAC_V10}
+
 {$IFDEF USE_3RDPARTY_DEVART_ODAC}
 uses
   SysUtils, StdCtrls, Dialogs,
   OraClasses, OraError, OraCall, OraServices,
-  JvDSADialogs, JvDBPasswordDialogOdac, JvResources;
+  {$IFDEF ODAC_V10}OraServerEnumerator, {$ENDIF ODAC_V10}JvDSADialogs, JvDBPasswordDialogOdac, JvResources;
 
 //=== { TJvDBOdacLogonDialogOptions } ========================================
 
@@ -223,6 +226,12 @@ begin
   end;
 end;
 
+procedure TJvDBOdacLogonDialog.DisconnectSession;
+begin
+  if Assigned(Session) then
+    OraSession.DisConnect;
+end;
+
 procedure TJvDBOdacLogonDialog.CreateAdditionalConnectDialogControls(AOwner: TComponent; AParentControl: TWinControl);
 var
   IDynControlComboBox: IJvDynControlComboBox;
@@ -281,7 +290,7 @@ var
 begin
   Items := TStringList.Create;
   try
-    for i := 0 to Length(OracleHomes) - 1 do
+    for i := 0 to OracleHomes.Count - 1 do
       Items.Add(OracleHomes[i].Name);
     if Supports(OracleHomeEdit, IJvDynControlItems, IDynControlItems) then
       IDynControlItems.ControlItems.Assign(Items);

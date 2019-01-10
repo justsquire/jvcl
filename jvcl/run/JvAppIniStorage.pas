@@ -231,12 +231,44 @@ begin
   FPreserveLeadingTrailingBlanks := Value;
 end;
 
-{ Optimalization of TCustomIniFile.ValueExists is only done for Delphi 7; Probably
-  works the same for other versions, but I can't check that.
+{ Optimization of TCustomIniFile.ValueExists.
   Note that this is a dirty hack, a better way would be to rewrite TMemIniFile;
-  especially expose FSections, but other optimizations can be done also.
-  For example TCustomIniFile.SectionExists}
-{$IFDEF DELPHI7}
+  especially expose FSections. }
+{$IFDEF DELPHI2009_UP}
+{$IFNDEF RTL330_UP}
+{ with Delphi 10.3 Rio TMemIniFile was rewritten, so there is no need for
+  optimization any more as dictionaries are used now }
+type
+  /// Optimization: TMemIniFile should overwrite these methods by itself
+  TMemIniFileHelper = class helper for TMemIniFile
+  public
+    function SectionExists(const Section: string): Boolean;
+    function ValueExists(const Section, Ident: string): Boolean;
+  end;
+
+function TMemIniFileHelper.SectionExists(const Section: string): Boolean;
+begin
+  with Self do Result := FSections.IndexOf(Section) >= 0;
+end;
+
+function TMemIniFileHelper.ValueExists(const Section, Ident: string): Boolean;
+var
+  I: Integer;
+  Strings: TStrings;
+  Sections: TStringList;
+begin
+  with Self do Sections := FSections;
+  I := Sections.IndexOf(Section);
+  if I >= 0 then
+  begin
+    Strings := TStringList(Sections.Objects[I]);
+    I := Strings.IndexOfName(Ident);
+    Result := I >= 0;
+  end else
+    Result := False;
+end;
+{$ENDIF RTL330_UP}
+{$ELSE}
 type
   TJvMemIniFile = class(TMemIniFile)
   public
@@ -262,18 +294,18 @@ begin
   end else
     Result := False;
 end;
-{$ENDIF DELPHI7}
+{$ENDIF DELPHI2009_UP}
 
 //=== { TJvCustomAppIniStorage } =============================================
 
 constructor TJvCustomAppIniStorage.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  {$IFDEF DELPHI7}
-  FIniFile := TJvMemIniFile.Create(Name);
-  {$ELSE}
+  {$IFDEF DELPHI2009_UP}
   FIniFile := TMemIniFile.Create(Name);
-  {$ENDIF DELPHI7}
+  {$ELSE}
+  FIniFile := TJvMemIniFile.Create(Name);
+  {$ENDIF DELPHI2009_UP}
 end;
 
 destructor TJvCustomAppIniStorage.Destroy;
@@ -580,7 +612,6 @@ begin
     Strings.EndUpdate;
   end;
 end;
-
 
 function TJvCustomAppIniStorage.CalcDefaultSection(Section: string): string;
 begin

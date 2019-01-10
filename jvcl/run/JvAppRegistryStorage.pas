@@ -268,7 +268,7 @@ begin
       try
         I := 0;
         repeat
-          EnumRes := RegEnumKey(TmpHKEY, I, SubKeyName, SizeOf(SubKeyName));
+          EnumRes := RegEnumKey(TmpHKEY, I, SubKeyName, Length(SubKeyName));
           if (EnumRes = ERROR_SUCCESS) and (not ReportListAsValue or
               not ListStored(Path + RegPathDelim + SubKeyName)) then
             Strings.Add(SubKeyName);
@@ -291,7 +291,7 @@ var
   TmpHKEY: HKEY;
   I: Integer;
   Name: array [0..511] of Char;
-  NameLen: Cardinal;
+  NameLen: DWORD;
   EnumRes: Longint;
 begin
   PathIsList := ReportListAsValue and ListStored(Path);
@@ -305,7 +305,7 @@ begin
       try
         I := 0;
         repeat
-          NameLen := SizeOf(Name);
+          NameLen := Length(Name);
           EnumRes := RegEnumValue(TmpHKEY, I, Name, NameLen, nil, nil, nil, nil);
           if (EnumRes = ERROR_SUCCESS) and (not PathIsList or (not AnsiSameText(cCount, Name) and
               not NameIsListItem(Name))) then
@@ -337,7 +337,9 @@ begin
       Result := True;
       if ListIsValue and (RegQueryValueEx(PathHKEY, cCount, nil, nil, nil, nil) = ERROR_SUCCESS) then
       begin
+        {$IFNDEF COMPILER25_UP}
         Result := False;
+        {$ENDIF ~COMPILER25_UP}
         I := 0;
         repeat
           NameLen := SizeOf(Name);
@@ -467,7 +469,9 @@ var
   {$ENDIF CPUX64}
 begin
   SplitKeyPath(Path, SubKey, ValueName);
+  {$IFNDEF COMPILER25_UP}
   Result := Default;
+  {$ENDIF ~COMPILER25_UP}
   try
     if not RegGetDataType(FRegHKEY, SubKey, ValueName, DataType) or (DataType = REG_BINARY) then
     begin

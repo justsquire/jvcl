@@ -182,7 +182,7 @@ uses
   {$IFNDEF COMPILER12_UP}
   JvJCLUtils,
   {$ENDIF ~COMPILER12_UP}
-  JclSimpleXML, JclStreams, JclSysUtils,
+  JclSimpleXML, JclStreams, JclSysUtils, JclFileUtils, JclStrings,
   CmdLineUtils, JvConsts, Utils, Core, Dcc32FileAgePatch;
 
 resourcestring
@@ -212,8 +212,12 @@ const
   sLinkingMapFiles = '[Linking: map files]'; // do not localize
 
 const
-  CommonDependencyFiles: array[0..5] of string = (
-    'jvcl.inc', 'jvclbase.inc', 'jvcl%t.inc', 'jedi\jedi.inc', 'linuxonly.inc', 'windowsonly.inc'
+  CommonDependencyFiles: array[0..4] of string = (
+    '%jvcl%\common\jvcl.inc',
+    '%jvcl%\common\jvclbase.inc',
+    '%jvcl%\common\jvcl%t%.inc',
+    '%jvcl%\common\windowsonly.inc',
+    '%jcl%\source\include\jedi\jedi.inc'
   );
 
 type
@@ -254,10 +258,23 @@ var
   ps: Integer;
 begin
   Result := S;
-  ps := Pos('%t', Result);
+  ps := Pos('%jcl%', Result);
   if ps > 0 then
   begin
-    Delete(Result, ps, 2);
+    Delete(Result, ps, 5);
+    Insert(TargetConfig.JclDir, Result, ps);
+  end;
+  ps := Pos('%jvcl%', Result);
+  if ps > 0 then
+  begin
+    Delete(Result, ps, 6);
+    Insert(TargetConfig.JVCLDir, Result, ps);
+  end;
+
+  ps := Pos('%t%', Result);
+  if ps > 0 then
+  begin
+    Delete(Result, ps, 3);
     Insert(Format('%s%d', [LowerCase(TargetConfig.Target.TargetType), TargetConfig.Target.Version]),
       Result, ps);
   end;
@@ -566,15 +583,17 @@ const
   MaxCmdLineLength = 2048 - 1;
 var
   DccCfg, PrjFilename, DccBinary: string;
-  BplFilename, BplBakFilename, Filename, Args, CmdLine, S: string;
+  BplFilename, BplBakFilename, Filename, Args, CmdLine, S, PathEnvVar: string;
   OutDirs: TOutputDirs;
   ExistingBplRenamed: Boolean;
+  ProcessInjectionProc: TInjectionProc;
 begin
   OutDirs := TargetConfig.GetOutputDirs(DebugUnits);
   PrjFilename := Project.SourceDir + PathDelim + ExtractFileName(Project.SourceName);
   if Files.Count > 0 then
     DccCfg := WriteDccCfg(ExtractFileDir(PrjFilename), TargetConfig, DccOpt, DebugUnits);
 
+  PathEnvVar := TargetConfig.GetPathEnvVar;
   CmdLine := '';
   Result := 0;
   try
@@ -634,13 +653,13 @@ begin
       try
         { Compile the project }
         if TargetConfig.Target.Version <= 9 then
-          Result := CaptureExecute('"' + DccBinary + '"', Args,
-                                   ExtractFileDir(PrjFilename), CaptureLinePackageCompilation, DoIdle,
-                                   False, TargetConfig.GetPathEnvVar, Dcc32SpeedInjection)
+          ProcessInjectionProc := Dcc32SpeedInjection
         else
-          Result := CaptureExecute('"' + DccBinary + '"', Args,
-                                   ExtractFileDir(PrjFilename), CaptureLinePackageCompilation, DoIdle,
-                                   False, TargetConfig.GetPathEnvVar, nil);
+          ProcessInjectionProc := GetCompilerSpeedPackInjection(TargetConfig.Target);
+
+        Result := CaptureExecute('"' + DccBinary + '"', Args,
+                                 ExtractFileDir(PrjFilename), CaptureLinePackageCompilation, DoIdle,
+                                 False, PathEnvVar, ProcessInjectionProc);
       finally
         { Restore original file if there was an error or an exception }
         if ExistingBplRenamed then
@@ -1081,7 +1100,7 @@ begin
   begin
     for i := 0 to High(CommonDependencyFiles) do
     begin
-      Filename := TargetConfig.JVCLDir + '\common\' + ReplaceTargetMacros(CommonDependencyFiles[i], TargetConfig);
+      Filename := ReplaceTargetMacros(CommonDependencyFiles[i], TargetConfig);
       DepAge := FileAgeEx(Filename);
       if (DcpAge < DepAge) or (DepAge = -1) then
       begin
@@ -1558,6 +1577,15 @@ begin
           DeleteFile(Filename);
       end;
     end;
+
+    // remove non suffixed hppdir content as there was a time when the JVCL did not create the win32/win64 subdirs for HPP files
+    if TargetConfig.Target.IDEVersion >= 11 then
+    begin
+      Files.Clear;
+      BuildFileList(StrEnsureNoSuffix(LowerCase(TargetConfig.Target.PlatformName), OutputDirs.HppDir) + '*.hpp', faAnyFile, Files, True);
+      for FileIndex := 0 to Files.Count - 1 do
+        DeleteFile(Files[FileIndex]);
+    end;
   finally
     Files.Free;
     UsedFiles.Free;
@@ -1867,6 +1895,10 @@ begin
     if not DebugUnits and not TargetConfig.DeveloperInstall then
       DccOpt := DccOpt + ' -DJVCL_NO_DEBUGINFO';
 
+    ForceDirectoriesEx(TargetConfig.UnitOutDir);
+    ForceDirectoriesEx(TargetConfig.BplDir);
+    ForceDirectoriesEx(TargetConfig.DcpDir);
+    //ForceDirectoriesEx(TargetConfig.HppDir);
     if DebugUnits then
     begin
       ForceDirectoriesEx(TargetConfig.DebugUnitOutDir);

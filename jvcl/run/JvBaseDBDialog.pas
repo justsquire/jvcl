@@ -87,7 +87,7 @@ begin
   Result := TForm(DynControlEngine.CreateForm('', ''));
   CreateFormControls(Result);
   if FParentWnd <> 0 then
-    SetWindowLongPtr(Result.Handle, GWL_HWNDPARENT, LONG_PTR(FParentWnd));
+    SetWindowLongPtr(Result.Handle, GWLP_HWNDPARENT, LONG_PTR(FParentWnd));
 end;
 
 procedure TJvBaseDBDialog.CreateFormControls(aForm: TForm);
@@ -102,6 +102,11 @@ function TJvBaseDBDialog.Execute(ParentWnd: HWND): Boolean;
 begin
   if not Assigned(Session) then
     Abort;
+  if Assigned(FDBDialog) then
+  begin
+    Result := False;
+    Exit;
+  end;
   FParentWnd := ParentWnd;
   FDBDialog := CreateForm;
   try

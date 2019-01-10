@@ -67,6 +67,7 @@ type
     FComboBox: TJvCustomDBComboBox;
     FOutfilteredItems: TStrings;
     FOutfilteredValues: TStrings;
+    FUseDisplayText: Boolean;
     procedure SetDataSource(const Value: TDataSource);
     procedure SetFilter(Value: string);
     function GetDataSource: TDataSource;
@@ -74,6 +75,7 @@ type
     procedure SetKeyField(const Value: string);
     procedure SetShowOutfilteredValue(const Value: Boolean);
     procedure SetOutfilteredValueFont(const Value: TFont);
+    procedure SetUseDisplayText(const Value: Boolean);
   protected
     procedure ListDataChange(Sender: TObject);
     procedure FontChange(Sender: TObject);
@@ -103,6 +105,9 @@ type
       ComboBox.Values/Items list. }
     property DataSource: TDataSource read GetDataSource write SetDataSource;
 
+    { UseDisplayText: Use DisplayField.DisplayText instead of DisplayField.AsString. }
+    property UseDisplayText: Boolean read FUseDisplayText write SetUseDisplayText default False;
+
     { OnFilter is triggered for every record before the Filter property is applied. }
     property OnFilter: TJvComboBoxFilterEvent read FOnFilter write FOnFilter;
   end;
@@ -117,6 +122,7 @@ type
     FListSettings: TJvDBComboBoxListSettings;
     FValues: TStringList;
     FEnableValues: Boolean;
+    FPreserveItemSelectionOnInsert: Boolean;
     procedure SetEnableValues(Value: Boolean);
     function GetValues: TStrings;
     procedure SetValues(Value: TStrings);
@@ -181,6 +187,7 @@ type
     property Items write SetItems;
     property Text;
     property UpdateFieldImmediatelly: Boolean read FUpdateFieldImmediatelly write FUpdateFieldImmediatelly default False;
+    property PreserveItemSelectionOnInsert: Boolean read FPreserveItemSelectionOnInsert write FPreserveItemSelectionOnInsert default False;
   end;
 
   {$IFDEF RTL230_UP}
@@ -224,6 +231,7 @@ type
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
+    property PreserveItemSelectionOnInsert;
     property ReadOnly;
     property ShowHint;
     property Sorted;
@@ -349,7 +357,11 @@ begin
     ComboText := Name
   else
   if FDataLink <> nil then
-    FDataLink.UpdateRecord
+  begin
+    FDataLink.UpdateRecord;
+    if (FDataLink.DataSource <> nil) and not FDataLink.DataSource.Enabled then
+      ComboText := '';
+  end
   else
     ComboText := '';
 end;
@@ -529,6 +541,8 @@ begin
 end;
 
 procedure TJvCustomDBComboBox.WndProc(var Msg: TMessage);
+var
+  OldItemIndex: Integer;
 begin
   if not (csDesigning in ComponentState) then
     case Msg.Msg of
@@ -536,12 +550,22 @@ begin
         if TWMCommand(Msg).NotifyCode = CBN_SELCHANGE then
         begin
           try
+            if FPreserveItemSelectionOnInsert and FDataLink.Active and FDataLink.CanModify and (FDataLink.DataSet.State = dsBrowse) then
+              OldItemIndex := ItemIndex
+            else
+              OldItemIndex := -1;
+
             if not FDataLink.Edit then
             begin
               if Style <> csSimple then
                 PostMessage(Handle, CB_SHOWDROPDOWN, 0, 0);
               Exit;
             end;
+
+            // Restore ItemIndex if FDataLink.Edit has triggered OnNewRecord that changed the associated field value.
+            // Otherwise the user's selection is reverted to the value in OnNewRecord when the dropdown list is closed
+            if FPreserveItemSelectionOnInsert and (OldItemIndex <> -1) and (OldItemIndex <> ItemIndex) and (FDataLink.DataSet.State = dsInsert) then
+              ItemIndex := OldItemIndex;
           except
             Reset;
             raise;
@@ -662,7 +686,7 @@ begin
     if ListSettings.DisplayField <> '' then
     begin
       Index := ListSettings.FOutfilteredValues.IndexOf(FDataLink.Field.AsString);
-      if (Index <> -1) and (Index < Items.Count) then
+      if (Index <> -1) and (Index < ListSettings.FOutfilteredItems.Count) then
         S := ListSettings.FOutfilteredItems[Index];
     end
     else
@@ -815,7 +839,7 @@ begin
     Items.BeginUpdate;
     Values.BeginUpdate;
     try
-      LastText := GetComboText();
+      LastText := GetComboText;
       Items.Clear;
       Values.Clear;
       if ListSettings.IsValid and ListSettings.DataSource.DataSet.Active and (ListSettings.KeyField <> '') then
@@ -840,12 +864,18 @@ begin
               begin
                 if FilterAccepted and ((FilterExpr = nil) or FilterExpr.Evaluate) then
                 begin
-                  Items.Add(LDisplayField.AsString);
+                  if ListSettings.UseDisplayText then
+                    Items.Add(LDisplayField.DisplayText)
+                  else
+                    Items.Add(LDisplayField.AsString);
                   Values.Add(LKeyField.AsString);
                 end
                 else
                 begin
-                  ListSettings.FOutfilteredItems.Add(LDisplayField.AsString);
+                  if ListSettings.UseDisplayText then
+                    ListSettings.FOutfilteredItems.Add(LDisplayField.DisplayText)
+                  else
+                    ListSettings.FOutfilteredItems.Add(LDisplayField.AsString);
                   ListSettings.FOutfilteredValues.Add(LKeyField.AsString);
                 end;
                 DataSet.Next;
@@ -941,6 +971,7 @@ begin
     FFilter := Src.FFilter;
     FKeyField := Src.FKeyField;
     FDisplayField := Src.FDisplayField;
+    FUseDisplayText := Src.FUseDisplayText;
     SetDataSource(Src.DataSource);
     FOnFilter := Src.FOnFilter;
 
@@ -970,7 +1001,6 @@ begin
     FListDataLink.DataSource := Value;
     if DataSource <> nil then
       DataSource.FreeNotification(ComboBox);
-    ComboBox.UpdateDropDownItems;
   end;
 end;
 
@@ -1019,6 +1049,15 @@ begin
   begin
     FShowOutfilteredValue := Value;
     ComboBox.Invalidate;
+  end;
+end;
+
+procedure TJvDBComboBoxListSettings.SetUseDisplayText(const Value: Boolean);
+begin
+  if Value <> FUseDisplayText then
+  begin
+    FUseDisplayText := Value;
+    ComboBox.UpdateDropDownItems;
   end;
 end;
 

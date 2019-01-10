@@ -27,6 +27,7 @@
     <File Name="..\..\run\JvAlarms.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvConverter.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvCreateProcess.pas" Targets="all" Formname="" Condition=""/>
+    <File Name="..\..\run\JvCpuUsage.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvDataEmbedded.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvEasterEgg.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvEnterTab.pas" Targets="all" Formname="" Condition=""/>
@@ -34,7 +35,6 @@
     <File Name="..\..\run\JvLogClasses.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvLogForm.pas" Targets="all" Formname="FoLog" Condition=""/>
     <File Name="..\..\run\JvMergeManager.pas" Targets="all" Formname="" Condition=""/>
-    <File Name="..\..\run\JvControlComponent.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvSpellChecker.pas" Targets="all" Formname="" Condition=""/>
     <File Name="..\..\run\JvSpellerForm.pas" Targets="all" Formname="JvSpellerForm" Condition=""/>
     <File Name="..\..\run\JvSpellIntf.pas" Targets="all" Formname="" Condition=""/>
@@ -51,6 +51,7 @@
     <File Name="..\..\..\help\JvAlarms.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvConverter.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvCreateProcess.dtx" Targets="help" Formname="" Condition=""/>
+    <File Name="..\..\..\help\JvCpuUsage.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvDataEmbedded.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvEasterEgg.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvEnterTab.dtx" Targets="help" Formname="" Condition=""/>
@@ -58,7 +59,6 @@
     <File Name="..\..\..\help\JvLogClasses.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvLogForm.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvMergeManager.dtx" Targets="help" Formname="" Condition=""/>
-    <File Name="..\..\..\help\JvControlComponent.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvSpellChecker.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvSpellerForm.dtx" Targets="help" Formname="" Condition=""/>
     <File Name="..\..\..\help\JvSpellIntf.dtx" Targets="help" Formname="" Condition=""/>

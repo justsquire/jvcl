@@ -64,6 +64,7 @@ type
     procedure SetBackgroundFillMode(const Value: TJvScrollBoxFillMode);
     function GetBackground: TPicture;
   protected
+    procedure BoundsChanged; override;
     procedure GetDlgCode(var Code: TDlgCodes); override;
     procedure MouseEnter(Control: TControl); override;
     procedure MouseLeave(Control: TControl); override;
@@ -71,8 +72,8 @@ type
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure PaintWindow(DC: HDC); override;
     procedure Paint; virtual;
-    function DoEraseBackground(Canvas: TCanvas; Param: LPARAM): Boolean; override;
-    procedure PaintBackground;
+    function DoEraseBackground(ACanvas: TCanvas; Param: LPARAM): Boolean; override;
+    procedure PaintBackground(ACanvas: TCanvas);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -113,6 +114,14 @@ implementation
 
 uses
   JvThemes;
+
+procedure TJvScrollBox.BoundsChanged;
+var R: TRect;
+begin
+  inherited BoundsChanged;
+  R := ClientRect;
+  InvalidateRect(self.Handle, @R, false);
+end;
 
 constructor TJvScrollBox.Create(AOwner: TComponent);
 begin
@@ -275,15 +284,15 @@ begin
   ControlState := ControlState - [csCustomPaint];
 end;
 
-function TJvScrollBox.DoEraseBackground(Canvas: TCanvas; Param: LPARAM): Boolean;
+function TJvScrollBox.DoEraseBackground(ACanvas: TCanvas; Param: LPARAM): Boolean;
 begin
   Result := False;
   if Assigned(FOnEraseBackground) then
-    FOnEraseBackground(Self, Canvas, Result);
+    FOnEraseBackground(Self, ACanvas, Result);
   if not Result then
-    Result := inherited DoEraseBackground(Canvas, Param);
+    Result := inherited DoEraseBackground(ACanvas, Param);
 
-  PaintBackground;
+  PaintBackground(ACanvas);
 end;
 
 procedure TJvScrollBox.Paint;
@@ -292,7 +301,7 @@ begin
     FOnPaint(Self);
 end;
 
-procedure TJvScrollBox.PaintBackground;
+procedure TJvScrollBox.PaintBackground(ACanvas: TCanvas);
 var
   R: TRect;
   X: Integer;
@@ -321,7 +330,7 @@ begin
             Y := R.Top;
             while Y < R.Bottom do
             begin
-              Canvas.Draw(X - XOffset, Y - YOffset, Background.Graphic);
+              ACanvas.Draw(X - XOffset, Y - YOffset, Background.Graphic);
 
               Inc(Y, BackgroundHeight - YOffset);
               YOffset := 0;
@@ -340,11 +349,11 @@ begin
             R.Bottom := VertScrollBar.Range - R.Top;
           OffsetRect(R, -HorzScrollBar.Position, -VertScrollBar.Position);
 
-          Canvas.StretchDraw(R, Background.Graphic);
+          ACanvas.StretchDraw(R, Background.Graphic);
         end;
       sfmNone:
         begin
-          Canvas.Draw(0, 0, Background.Graphic);
+          ACanvas.Draw(0, 0, Background.Graphic);
         end;
     end;
   end;

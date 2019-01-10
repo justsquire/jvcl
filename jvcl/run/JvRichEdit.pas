@@ -667,6 +667,7 @@ type
     function GetSelText: string; override;
     procedure SetSelLength(Value: Integer); override;
     procedure SetSelStart(Value: Integer); override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     property AllowInPlace: Boolean read FAllowInPlace write FAllowInPlace default True;
     property AutoAdvancedTypography: Boolean read FAutoAdvancedTypography write FAutoAdvancedTypography default True;
     property AdvancedTypography: Boolean read GetAdvancedTypography write SetAdvancedTypography stored
@@ -990,7 +991,7 @@ uses
   {$IFDEF RTL200_UP}
   CommDlg,
   {$ENDIF RTL200_UP}
-  JclAnsiStrings,
+  JclAnsiStrings, JclSysInfo,
   JvThemes, JvConsts, JvResources, JvFixedEditPopUp;
 
 type
@@ -1796,7 +1797,7 @@ begin
   Result := SendMessage(Wnd, EM_GETOLEINTERFACE, 0, LPARAM(@RichEditOle)) <> 0;
 end;
 
-function StreamSave(dwCookie: Longint; pbBuff: PByte;
+function StreamSave(dwCookie: {$IFDEF COMPILER19_UP}DWORD_PTR{$ELSE}Longint{$ENDIF}; pbBuff: PByte;
   cb: Longint; var pcb: Longint): Longint; stdcall;
 var
   Converter: TJvConversion;
@@ -1956,7 +1957,7 @@ begin
     Result := 2 * AdjustLineBreaksW(PWideChar(Buffer), PWideChar(pBuff), Result div 2);
 end;
 
-function StreamLoad(dwCookie: Longint; pbBuff: PByte;
+function StreamLoad(dwCookie: {$IFDEF COMPILER19_UP}DWORD_PTR{$ELSE}Longint{$ENDIF}; pbBuff: PByte;
   cb: Longint; var pcb: Longint): Longint; stdcall;
 begin
   Result := NoError;
@@ -1967,7 +1968,7 @@ begin
   end;
 end;
 
-function StreamLoadW(dwCookie: Longint; pbBuff: PByte;
+function StreamLoadW(dwCookie: {$IFDEF COMPILER19_UP}DWORD_PTR{$ELSE}Longint{$ENDIF}; pbBuff: PByte;
   cb: Longint; var pcb: Longint): Longint; stdcall;
 begin
   Result := NoError;
@@ -2697,7 +2698,7 @@ begin
   HandleNeeded; { we REALLY need the handle for BiDi }
   inherited;
 
-  BiDiOptions.cbSize := sizeof(BiDiOptions);
+  BiDiOptions.cbSize := SizeOf(BiDiOptions);
   BiDiOptions.wMask := BOM_NEUTRALOVERRIDE or BOM_CONTEXTREADING or BOM_CONTEXTALIGNMENT;
   BiDiOptions.wEffects := BOE_NEUTRALOVERRIDE or BOE_CONTEXTREADING or BOE_CONTEXTALIGNMENT;
   SendMessage(Handle, EM_SETBIDIOPTIONS, 0, LPARAM(@BiDiOptions));
@@ -3317,7 +3318,9 @@ end;
 {$IFDEF RTL220_UP}
 procedure TJvCustomRichEdit.DoContextPopup(MousePos: TPoint; var Handled: Boolean);
 begin
-  if not Assigned(PopupMenu) then
+  inherited DoContextPopup(MousePos, Handled);
+
+  if not Assigned(PopupMenu) and not Handled then
   begin
     MousePos := ClientToScreen(MousePos);
     FixedDefaultEditPopUp(Self).Popup(MousePos.X, MousePos.Y);
@@ -3585,13 +3588,7 @@ end;
 function TJvCustomRichEdit.InsertObjectDialog: Boolean;
 var
   Data: TOleUIInsertObject;
-  {$IFDEF UNICODE}
-  { Mantis #4738: OleUIInsertObjectW() returns with OLEUI_IOERR_LPCLSIDEXCLUDEINVALID }
-  { Probably windows error; cchFile must be exactly MAXPATH }
-  NameBuffer: array[0..MAX_PATH div SizeOf(Char) - 1] of Char;
-  {$ELSE}
-  NameBuffer: array[0..255] of Char;
-  {$ENDIF UNICODE}
+  NameBuffer: array[0..MAX_PATH - 1] of Char; // MSDN: cchFile must not exceed MAX_PATH
   OleClientSite: IOleClientSite;
   Storage: IStorage;
   OleObject: IOleObject;
@@ -3615,7 +3612,7 @@ begin
           IOF_CREATENEWOBJECT or IOF_CREATEFILEOBJECT or IOF_CREATELINKOBJECT;
         hWndOwner := Handle;
         lpszFile := NameBuffer;
-        cchFile := SizeOf(NameBuffer);
+        cchFile := Length(NameBuffer);
         iid := IOleObject;
         oleRender := OLERENDER_DRAW;
         lpIOleClientSite := OleClientSite;
@@ -3648,11 +3645,9 @@ begin
           OleCheck(IRichEditOle(FRichEditOle).InsertObject(ReObject));
           SendMessage(Handle, EM_EXSETSEL, 0, LPARAM(@Selection));
           SendMessage(Handle, Messages.EM_SCROLLCARET, 0, 0);
-          IRichEditOle(FRichEditOle).SetDvaspect(
-            Longint(REO_IOB_SELECTION), ReObject.dvAspect);
+          IRichEditOle(FRichEditOle).SetDvaspect(Longint(REO_IOB_SELECTION), ReObject.dvAspect);
           if IsNewObject then
-            OleObject.DoVerb(OLEIVERB_SHOW, nil,
-              OleClientSite, 0, Handle, ClientRect);
+            OleObject.DoVerb(OLEIVERB_SHOW, nil, OleClientSite, 0, Handle, ClientRect);
         finally
           ReleaseObject(OleObject);
         end;
@@ -3756,6 +3751,15 @@ end;
 function TJvCustomRichEdit.IsAdvancedTypographyStored: Boolean;
 begin
   Result := not AutoAdvancedTypography;
+end;
+
+procedure TJvCustomRichEdit.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  // Mantis 6231: TCustomRichEdit from the VCL ignores WantReturns
+  if not WantReturns and (Key = $D) and (Shift = []) then
+    Key := 0;
+
+  inherited KeyDown(Key, Shift);
 end;
 
 function TJvCustomRichEdit.CharFromPos(X, Y: Integer): Integer;
@@ -4622,7 +4626,7 @@ procedure TJvCustomRichEdit.WMRButtonUp(var Msg: TMessage);
 begin
   { RichEd20 does not pass the WM_RBUTTONUP message to defwndproc, }
   { so we get no WM_CONTEXTMENU message. Simulate message here.    }
-  if ((RichEditVersion <> 1) or not CheckWin32Version(5, 0)) and AllowObjects then
+  if ((RichEditVersion <> 1) or not JclCheckWinVersion(5, 0)) and AllowObjects then
     Perform(WM_CONTEXTMENU, Handle, {$IFDEF RTL230_UP}PointToLParam{$ELSE}LPARAM{$ENDIF RTL230_UP}(PointToSmallPoint(
       ClientToScreen(SmallPointToPoint(TWMMouse(Msg).Pos)))));
   inherited;
@@ -5998,7 +6002,7 @@ var
 begin
   with EditStream do
   begin
-    dwCookie := Longint(AConverter);
+    dwCookie := {$IFDEF COMPILER19_UP}DWORD_PTR{$ELSE}Longint{$ENDIF}(AConverter);
     pfnCallBack := StreamSave;
     dwError := 0;
   end;
@@ -6050,7 +6054,7 @@ begin
   try
     with EditStream do
     begin
-      dwCookie := Longint(Cookie);
+      dwCookie := {$IFDEF COMPILER19_UP}DWORD_PTR{$ELSE}Longint{$ENDIF}(Cookie);
       pfnCallBack := StreamLoad;
       dwError := 0;
     end;

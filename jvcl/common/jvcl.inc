@@ -124,6 +124,86 @@ ALERT_jedi_inc_incompatible
  {$DEFINE JVCL_CONFIGURED}
 {$ENDIF DELPHI18}
 {-----------------------------------------------------------------------------}
+{$IFDEF DELPHI19}
+ {$IFDEF CPUX86}
+ {$I jvcld19.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld19_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI19}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI20}
+ {$IFDEF CPUX86}
+ {$I jvcld20.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld20_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI20}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI21}
+ {$IFDEF CPUX86}
+ {$I jvcld21.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld21_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI21}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI22}
+ {$IFDEF CPUX86}
+ {$I jvcld22.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld22_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI22}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI23}
+ {$IFDEF CPUX86}
+ {$I jvcld23.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld23_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI23}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI24}
+ {$IFDEF CPUX86}
+ {$I jvcld24.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld24_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI24}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI25}
+ {$IFDEF CPUX86}
+ {$I jvcld25.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld25_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI25}
+{-----------------------------------------------------------------------------}
+{$IFDEF DELPHI26}
+ {$IFDEF CPUX86}
+ {$I jvcld26.inc}
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld26_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF DELPHI26}
+{-----------------------------------------------------------------------------}
 { C++Builder                                                                  }
 {-----------------------------------------------------------------------------}
 {$IFDEF BCB6}
@@ -185,7 +265,87 @@ ALERT_jedi_inc_incompatible
  {$ENDIF CPUX64}
  {$DEFINE JVCL_CONFIGURED}
 {$ENDIF BCB18}
-
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB19}
+ {$IFDEF CPUX86}
+ {$I jvcld19win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld19_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB19}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB20}
+ {$IFDEF CPUX86}
+ {$I jvcld20win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld20_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB20}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB21}
+ {$IFDEF CPUX86}
+ {$I jvcld21win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld21_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB21}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB22}
+ {$IFDEF CPUX86}
+ {$I jvcld22win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld22_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB22}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB23}
+ {$IFDEF CPUX86}
+ {$I jvcld23win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld23_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB23}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB24}
+ {$IFDEF CPUX86}
+ {$I jvcld24win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld24_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB24}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB25}
+ {$IFDEF CPUX86}
+ {$I jvcld25win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld25_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB25}
+{-----------------------------------------------------------------------------}
+{$IFDEF BCB26}
+ {$IFDEF CPUX86}
+ {$I jvcld26win32.inc} // same include file for BDS based C++
+ {$ENDIF CPUX86}
+ {$IFDEF CPUX64}
+ {$I jvcld26_x64.inc}
+ {$ENDIF CPUX64}
+ {$DEFINE JVCL_CONFIGURED}
+{$ENDIF BCB26}
+{-----------------------------------------------------------------------------}
 {$ENDIF DEFAULT_JVCL_INC}
 {-----------------------------------------------------------------------------}
 
@@ -222,6 +382,11 @@ ALERT_jedi_inc_incompatible
   {$DEFINE JVCLThemesEnabledD6}
  {$ENDIF JVCLThemesEnabled}
 {$ENDIF COMPILER7_UP}
+
+// XE2+ custom styles
+{$IFDEF COMPILER16_UP}
+  {$DEFINE JVCLStylesEnabled}
+{$ENDIF COMPILER16_UP}
 
 {$IFDEF USE_3RDPARTY_DEVEXPRESS_CXEDITOR_SHARED}
   {$DEFINE USE_3RDPARTY_DEVEXPRESS_CXEDITOR}

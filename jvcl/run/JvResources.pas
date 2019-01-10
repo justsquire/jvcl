@@ -1,4 +1,4 @@
-{-----------------------------------------------------------------------------
+ï»¿{-----------------------------------------------------------------------------
 The contents of this file are subject to the Mozilla Public License
 Version 1.1 (the "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -56,7 +56,7 @@ resourcestring
   RsSelectAllItem = 'Select &All';
   {
   SWEDISH:
-  RsUndoItem = '&Ångra';
+  RsUndoItem = '&Ã…ngra';
   RsCutItem = '&Klipp ut';
   RsCopyItem = 'K&opiera';
   RsPasteItem = 'Kl&istra in';
@@ -64,17 +64,17 @@ resourcestring
   RsSelectAllItem = '&Markera allt';
 
   GERMAN:
-  RsUndoItem = '&Rückgängig';
+  RsUndoItem = '&RÃ¼ckgÃ¤ngig';
   RsCutItem = '&Ausschneiden';
   RsCopyItem = '&Kopieren';
-  RsPasteItem = 'E&infügen';
-  RsDeleteItem = '&Löschen';
+  RsPasteItem = 'E&infÃ¼gen';
+  RsDeleteItem = '&LÃ¶schen';
   RsSelectAllItem = 'Alles &markieren';
 
   DUTCH:
   RsUndoItem = '&Ongedaan maken';
   RsCutItem = 'K&nippen';
-  RsCopyItem = '&Kopiëren';
+  RsCopyItem = '&KopiÃ«ren';
   RsPasteItem = '&Plakken';
   RsDeleteItem = '&Wissen';
   RsSelectAllItem = '&Alles selecteren';
@@ -587,6 +587,9 @@ resourcestring
   RsDBPosBackward = 'Backward';
   RsDBPosForward = 'Forward';
   RsDBPosPercental = 'Percental';
+  RsDBPosPositionNormal = ' %3d / %3d ';
+  RsDBPosPositionSelected = ' %3d / %3d (%d) ';
+  RsDBPosPositionInactive = ' - / - ';
   RsSRWPostButtonCaption = '&Post';
   RsSRWCancelButtonCaption = '&Cancel';
   RsSRWCloseButtonCaption = 'C&lose';
@@ -1073,8 +1076,8 @@ resourcestring
 //=== JvgXMLSerializer.pas ===================================================
 resourcestring
   { RUSSIAN
-  RsOpenXMLTagNotFound = 'Îòêðûâàþùèé òåã íå íàéäåí: <%s>';
-  RsCloseXMLTagNotFound = 'Çàêðûâàþùèé òåã íå íàéäåí: </%s>';
+  RsOpenXMLTagNotFound = 'ÃŽÃ²ÃªÃ°Ã»Ã¢Ã Ã¾Ã¹Ã¨Ã© Ã²Ã¥Ã£ Ã­Ã¥ Ã­Ã Ã©Ã¤Ã¥Ã­: <%s>';
+  RsCloseXMLTagNotFound = 'Ã‡Ã ÃªÃ°Ã»Ã¢Ã Ã¾Ã¹Ã¨Ã© Ã²Ã¥Ã£ Ã­Ã¥ Ã­Ã Ã©Ã¤Ã¥Ã­: </%s>';
   RsUncknownProperty = 'Uncknown property: %s'
   }
   RsOpenXMLTagNotFound = 'Open tag not found: <%s>';
@@ -1726,13 +1729,13 @@ resourcestring
   RSProgramVersionInfo_PropertyHint_ProgramLocationPath = 'Path where the installer of the version could be found. This could be a absolute path or a relative path to the location of the version list';
   RSProgramVersionInfo_PropertyHint_LocalInstallerParams = 'List of parameters for the execution of the installer file';
   RSProgramVersionInfo_PropertyHint_DownloadPassword = 'Flag to define whether a password is required for the download or not';
-  RSProgramVersionInfo_ObjectHint = 'Class to collect all informations about a program version'#13#10+
-    'These informations will be stored in a file on the remote site';
+  RSProgramVersionInfo_ObjectHint = 'Class to collect all information about a program version'#13#10+
+    'This information will be stored in a file on the remote site';
   RSProgramVersionHistory_PropertyHint_alpha = 'Auto calculated version number of the highest alpha version';
   RSProgramVersionHistory_PropertyHint_beta = 'Auto calculated version number of the highest beta version';
   RSProgramVersionHistory_PropertyHint_Production = 'Auto calculated version number of the highest production version';
-  RSProgramVersionHistory_ObjectHint = 'Class to define a list of program version informations. This class is used '+
-            'to detect which versions are available. Allso the informations will be used '+
+  RSProgramVersionHistory_ObjectHint = 'Class to define a list of program version information. This class is used '+
+            'to detect which versions are available. The information will also be used '+
             'in the version info dialog';
   RSProgramVersionHistory = 'Program Version History';
 

@@ -1,4 +1,4 @@
-﻿; This is a Doc-O-Matic version 6.5.1.1382 project file.
+; This is a Doc-O-Matic version 6.5.1.1382 project file.
 ; This file is maintained by Doc-O-Matic, do not edit manually.
 
 [*Control*]
@@ -33,7 +33,7 @@ File3=JEDI.doxdb
 File4=vcl.doxdb
 
 [Source Files]
-Count=47
+Count=49
 File0=..\..\run\JvMouseGesture.pas
 File1=..\..\run\JvPageManager.pas
 File2=..\..\run\JvPatchFile.pas
@@ -46,14 +46,14 @@ File8=..\..\run\JvWinHelp.pas
 File9=..\..\run\JvAlarms.pas
 File10=..\..\run\JvConverter.pas
 File11=..\..\run\JvCreateProcess.pas
-File12=..\..\run\JvDataEmbedded.pas
-File13=..\..\run\JvEasterEgg.pas
-File14=..\..\run\JvEnterTab.pas
-File15=..\..\run\JvLogFile.pas
-File16=..\..\run\JvLogClasses.pas
-File17=..\..\run\JvLogForm.pas
-File18=..\..\run\JvMergeManager.pas
-File19=..\..\run\JvControlComponent.pas
+File12=..\..\run\JvCpuUsage.pas
+File13=..\..\run\JvDataEmbedded.pas
+File14=..\..\run\JvEasterEgg.pas
+File15=..\..\run\JvEnterTab.pas
+File16=..\..\run\JvLogFile.pas
+File17=..\..\run\JvLogClasses.pas
+File18=..\..\run\JvLogForm.pas
+File19=..\..\run\JvMergeManager.pas
 File20=..\..\run\JvSpellChecker.pas
 File21=..\..\run\JvSpellerForm.pas
 File22=..\..\run\JvSpellIntf.pas
@@ -70,17 +70,18 @@ File32=..\..\..\help\JvWinHelp.dtx
 File33=..\..\..\help\JvAlarms.dtx
 File34=..\..\..\help\JvConverter.dtx
 File35=..\..\..\help\JvCreateProcess.dtx
-File36=..\..\..\help\JvDataEmbedded.dtx
-File37=..\..\..\help\JvEasterEgg.dtx
-File38=..\..\..\help\JvEnterTab.dtx
-File39=..\..\..\help\JvLogFile.dtx
-File40=..\..\..\help\JvLogClasses.dtx
-File41=..\..\..\help\JvLogForm.dtx
-File42=..\..\..\help\JvMergeManager.dtx
-File43=..\..\..\help\JvControlComponent.dtx
-File44=..\..\..\help\JvSpellChecker.dtx
-File45=..\..\..\help\JvSpellerForm.dtx
-File46=..\..\..\help\JvSpellIntf.dtx
+File36=..\..\..\help\JvCpuUsage.dtx
+File37=..\..\..\help\JvDataEmbedded.dtx
+File38=..\..\..\help\JvEasterEgg.dtx
+File39=..\..\..\help\JvEnterTab.dtx
+File40=..\..\..\help\JvLogFile.dtx
+File41=..\..\..\help\JvLogClasses.dtx
+File42=..\..\..\help\JvLogForm.dtx
+File43=..\..\..\help\JvMergeManager.dtx
+File44=..\..\..\help\JvControlComponent.dtx
+File45=..\..\..\help\JvSpellChecker.dtx
+File46=..\..\..\help\JvSpellerForm.dtx
+File47=..\..\..\help\JvSpellIntf.dtx
 
 [General]
 Copyright=Copyright (C) 1999, 2013 Project JEDI

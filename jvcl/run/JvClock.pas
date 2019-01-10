@@ -244,7 +244,7 @@ const
     $58, $F6, $48, $E2, $81, $F9, $6F, $E1, $BC, $FC, $EC, $E0);
 
 const
-  AlarmSecDelay = 60; { seconds for try alarm event after alarm time occured }
+  AlarmSecDelay = 60; { seconds for try alarm event after alarm time occurred }
   MaxDotWidth = 25; { maximum Hour-marking dot width  }
   MinDotWidth = 2; { minimum Hour-marking dot width  }
   MinDotHeight = 1; { minimum Hour-marking dot height }
@@ -1122,6 +1122,8 @@ var
     end;
   end;
 
+var
+  DrawR: TRect;
 begin
   GetTime(NewTime);
   H := NewTime.Hour;
@@ -1172,6 +1174,11 @@ begin
     if ShowDate then
     begin
       DateStr := FormatDateTime(DateFormat + ' ', GetSystemDate);
+      DrawR := Rect;
+      DrawText(Canvas, PChar(DateStr), Length(DateStr), DrawR,
+        DT_EXPANDTABS or DT_VCENTER or DT_NOCLIP or DT_SINGLELINE or DT_CALCRECT);
+      DrawThemedBackground(Self, Canvas, DrawR);
+      SetBkMode(Canvas.Handle, Windows.TRANSPARENT);
       DrawText(Canvas, PChar(DateStr), Length(DateStr), Rect,
         DT_EXPANDTABS or DT_VCENTER or DT_NOCLIP or DT_SINGLELINE);
       Inc(Rect.Left, Length(DateFormat) * FontWidth);
@@ -1185,6 +1192,8 @@ begin
     if FullTime or (NewTime.Hour <> FDisplayTime.Hour) then
     begin
       Rect.Right := Rect.Left + TextWidth(SAmPm);
+      DrawThemedBackground(Self, Canvas, Rect);
+      SetBkMode(Canvas.Handle, Windows.TRANSPARENT);
       DrawText(Canvas, PChar(SAmPm), Length(SAmPm), Rect,
         DT_EXPANDTABS or DT_VCENTER or DT_NOCLIP or DT_SINGLELINE);
     end;

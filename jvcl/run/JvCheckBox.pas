@@ -96,6 +96,8 @@ type
     procedure SetLinkedControls(const Value: TJvLinkedControls);
     procedure ReadAssociated(Reader: TReader);
     procedure SetDataConnector(const Value: TJvCheckBoxDataConnector);
+    function IsHotTrackFontStored: Boolean;
+    procedure SetClientSize(W, H: Integer);
   protected
     function CreateDataConnector: TJvCheckBoxDataConnector; virtual;
     procedure Notification(AComponent: TComponent; Operation: TOperation);override;
@@ -130,7 +132,7 @@ type
     property AutoSize: Boolean read FAutoSize write SetAutoSize default True;
     property HintColor;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
-    property HotTrackFont: TFont read FHotTrackFont write SetHotTrackFont;
+    property HotTrackFont: TFont read FHotTrackFont write SetHotTrackFont stored IsHotTrackFontStored;
     property HotTrackFontOptions: TJvTrackFontOptions read FHotTrackFontOptions write SetHotTrackFontOptions
       default DefaultTrackFontOptions;
     property Layout: TTextLayout read FLayout write SetLayout default tlCenter;
@@ -364,6 +366,14 @@ begin
   CalcAutoSize;
 end;
 
+procedure TJvCheckBox.SetClientSize(W, H: Integer);
+var
+  Client: TRect;
+begin
+  Client := GetClientRect;
+  SetBounds(Left, Top, Width - Client.Right + W, Height - Client.Bottom + H);
+end;
+
 procedure TJvCheckBox.CalcAutoSize;
 const
   Flags: array [Boolean] of Cardinal = (DT_SINGLELINE, DT_WORDBREAK);
@@ -379,12 +389,11 @@ begin
   // add some spacing
   Inc(ASize.cy, 4);
   FCanvas.Font := Font;
-  R := Rect(0, 0, ClientWidth, ClientHeight);
   // This is slower than GetTextExtentPoint but it does consider hotkeys
   if Caption <> '' then
   begin
-    DrawText(FCanvas, Caption, -1, R,
-      Flags[WordWrap] or DT_LEFT or DT_NOCLIP or DT_CALCRECT);
+    R := ClientRect;
+    DrawText(FCanvas, Caption, -1, R, Flags[WordWrap] or DT_LEFT or DT_NOCLIP or DT_CALCRECT);
     AWidth := (R.Right - R.Left) + ASize.cx + 8;
     AHeight := R.Bottom - R.Top;
   end
@@ -397,8 +406,7 @@ begin
     AWidth := ASize.cx;
   if AHeight < ASize.cy then
     AHeight := ASize.cy;
-  ClientWidth := AWidth;
-  ClientHeight := AHeight;
+  SetClientSize(AWidth, AHeight);
 end;
 
 procedure TJvCheckBox.SetHotTrackFont(const Value: TFont);
@@ -421,6 +429,11 @@ end;
 function TJvCheckBox.GetCanvas: TCanvas;
 begin
   Result := FCanvas;
+end;
+
+function TJvCheckBox.IsHotTrackFontStored: Boolean;
+begin
+  Result := IsHotTrackFontDfmStored(HotTrackFont, Font, HotTrackFontOptions);
 end;
 
 procedure TJvCheckBox.SetHotTrackFontOptions(const Value: TJvTrackFontOptions);
@@ -523,30 +536,33 @@ type
 procedure TJvCheckBox.SetFocus;
 var
   I: Integer;
-  FocusLinkedControl: TControl;
+  FocusLinkedControl: TJvLinkedControl;
+  FocusTargetControl: TControl;
 begin
   inherited SetFocus;
 
-  // we want to skip our own focus, either to our children or to a sibling
-  // depending on the direction that the user asked for
+  // We want to transfer our own focus either to our children or to
+  // the first focus accepting sibling, depending on the direction
+  // that the user asked for.
   if GetKeyState(VK_SHIFT) >= 0 then
   begin
-    FocusLinkedControl := nil;
-    I := 0;
-    while (I < LinkedControls.Count) and not Assigned(FocusLinkedControl) do
+    for I := 0 to LinkedControls.Count - 1 do
     begin
-      if (loForceFocus in LinkedControls[I].Options) and (LinkedControls[I].Control is TWinControl) then
-        FocusLinkedControl := LinkedControls[I].Control;
-
-      Inc(I);
+      FocusLinkedControl := LinkedControls[I];
+      if loForceFocus in FocusLinkedControl.Options then
+      begin
+        FocusTargetControl := FocusLinkedControl.Control;
+        if (FocusTargetControl is TWinControl) and TWinControl(FocusTargetControl).CanFocus then
+        begin
+          TWinControl(FocusTargetControl).SetFocus;
+          Break; // found the new focus owner
+        end;
+      end;
     end;
-    if Assigned(FocusLinkedControl) and TWinControl(FocusLinkedControl).CanFocus then
-      TWinControl(FocusLinkedControl).SetFocus;
   end
   else
-  begin
+  if LinkedControls.Count > 0 then
     TWinControlAccess(Parent).SelectNext(Self, False, True);
-  end;
 end;
 
 procedure TJvCheckBox.DefineProperties(Filer: TFiler);

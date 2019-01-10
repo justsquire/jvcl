@@ -35,7 +35,7 @@ uses
   Windows, SysUtils, Classes, Contnrs, Registry, PackageInformation;
 
 const
-  BDSVersions: array[1..11] of record
+  BDSVersions: array[1..20] of record
                                 Name: string;
                                 VersionStr: string;
                                 Version: Integer;
@@ -53,7 +53,16 @@ const
     (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE'; Version: 15; CIV: '150'; Supported: True),
     (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE2'; Version: 16; CIV: '160'; Supported: True),
     (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE3'; Version: 17; CIV: '170'; Supported: True),
-    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE4'; Version: 18; CIV: '180'; Supported: True)
+    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE4'; Version: 18; CIV: '180'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE5'; Version: 19; CIV: '190'; Supported: True),
+    (Name: 'skipped'; VersionStr: 'skipped'; Version: 19; CIV: '190'; Supported: False),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE6'; Version: 20; CIV: '200'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE7'; Version: 21; CIV: '210'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: 'XE8'; Version: 22; CIV: '220'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: '10'; Version: 23; CIV: '230'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: '10.1'; Version: 24; CIV: '240'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: '10.2'; Version: 25; CIV: '250'; Supported: True),
+    (Name: 'Embarcadero RAD Studio'; VersionStr: '10.3'; Version: 26; CIV: '260'; Supported: True)
   );
 
 type
@@ -83,6 +92,37 @@ type
   public
     constructor Create;
     property Items[Index: Integer]: TCompileTarget read GetItems; default;
+  end;
+
+  TEnvVarStringItem = class(TObject)
+  private
+    FValue: string;
+  public
+    property Value: string read FValue write FValue;
+  end;
+
+  TEnvVarStrings = class(TObject)
+  private
+    FItems: TStringList; // Objects[]: TEnvVarStringItem
+    function GetCount: Integer;
+    function GetName(Index: Integer): string;
+    function GetValue(const Name: string): string;
+    function GetValueByIndex(Index: Integer): string;
+    procedure SetValue(const Name, Value: string);
+    procedure SetValueByIndex(Index: Integer; const Value: string);
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function IndexOfName(const AName: string): Integer;
+    procedure Add(const AName, AValue: string);
+    procedure Assign(ASource: TEnvVarStrings);
+    procedure Clear;
+    function Matches(AList: TEnvVarStrings): Boolean;
+
+    property Count: Integer read GetCount;
+    property Names[Index: Integer]: string read GetName;
+    property ValuesByIndex[Index: Integer]: string read GetValueByIndex write SetValueByIndex;
+    property Values[const Name: string]: string read GetValue write SetValue; default;
   end;
 
   TCompileTarget = class(TObject)
@@ -119,8 +159,8 @@ type
     FGlobalCppBrowsingPaths: TStringList;
     FGlobalCppLibraryPaths: TStringList;
     
-    FOrgEnvVars: TStrings;
-    FEnvVars: TStrings;
+    FOrgEnvVars: TEnvVarStrings;
+    FEnvVars: TEnvVarStrings;
     FDefaultBDSProjectsDir: string;
     FCommonProjectsDir: string;
 
@@ -144,6 +184,7 @@ type
     function GetDcc64: string;
     function GetDccil: string;
     function GetBcc32: string;
+    function GetBcc64: string;
     function GetIlink32: string;
     function GetTlib: string;
     function GetBplDir: string;
@@ -163,6 +204,7 @@ type
     function IsDelphi: Boolean;
     function IsPersonal: Boolean;
     function DisplayName: string;
+    function HasBDE: Boolean;
 
     function IsInEnvPath(const Dir: string): Boolean;
       { IsInEnvPath returns True if Dir is in the EnvPath. (ShortPaths and
@@ -208,6 +250,7 @@ type
     property Dcc64: string read GetDcc64;
     property Dccil: string read GetDccil;
     property Bcc32: string read GetBcc32;
+    property Bcc64: string read GetBcc64;
     property Ilink32: string read GetIlink32;
     property Tlib: string read GetTlib;
 
@@ -227,7 +270,7 @@ type
     property LatestUpdate: Integer read FLatestUpdate;
     property LatestRTLPatch: Integer read FLatestRTLPatch;
     property EnvPath: string read GetEnvPath write SetEnvPath;
-    property EnvVars: TStrings read FEnvVars;
+    property EnvVars: TEnvVarStrings read FEnvVars;
 
     property BrowsingPaths: TStringList read FBrowsingPaths; // with macros
     property PackageSearchPathList: TStringList read FPackageSearchPaths; // with macros
@@ -298,6 +341,9 @@ const
   KeyBorland = '\SOFTWARE\Borland\'; // do not localize
   KeyCodeGear = '\SOFTWARE\CodeGear\'; // do not localize
   KeyEmbarcadero = '\SOFTWARE\Embarcadero\'; // do not localize
+
+var
+  GlobalPathEnvVar: string;
 
 function SubStr(const Text: string; StartIndex, EndIndex: Integer): string;
 begin
@@ -500,6 +546,10 @@ end;
 constructor TCompileTarget.Create(const AName, AVersion, ARegSubKey: string; APlatform: TCompileTargetPlatform);
 begin
   inherited Create;
+
+  if GlobalPathEnvVar = '' then
+    GlobalPathEnvVar := GetEnvironmentVariable('PATH');
+
   FInstalledPersonalities := TStringList.Create;
   FIDEName := AName;
   FPlatform := APlatform;
@@ -531,8 +581,8 @@ begin
     FRegistryKey := KeyBorland + ARegSubKey + '\' + IDEVersionStr;
   end;
 
-  FOrgEnvVars := TStringList.Create;
-  FEnvVars := TStringList.Create;
+  FOrgEnvVars := TEnvVarStrings.Create;
+  FEnvVars := TEnvVarStrings.Create;
 
   FBrowsingPaths := TStringList.Create;
   FPackageSearchPaths := TStringList.Create;
@@ -607,6 +657,8 @@ begin
      // available macros
       if (S = 'delphi') or (S = 'bcb') or (S = 'bds') then // do not localize
         NewS := FRootDir
+      else if S = 'bdslib' then // don't trust the env-var for this as it may be the wrong version
+        NewS := FRootDir + '\lib'
       else if IsBDS and (S = 'bdsprojectsdir') then // do not localize
         NewS := BDSProjectsDir
       else if IsBDS and (IDEVersion >= 5) and (S = 'bdscommondir') then
@@ -795,6 +847,7 @@ var
   ForceEnvOptionsUpdate: Boolean;
   LibraryKey: string;
   ValueInfo: TRegDataInfo;
+  EnvVarNames: TStrings;
 begin
   Reg := TRegistry.Create;
   try
@@ -810,7 +863,8 @@ begin
       else if IsBDS and (IDEVersion = 5) then
         FEdition := ''
       else
-        FEdition := 'Pers'; // do not localize
+        //FEdition := 'Pers'; // do not localize
+        FEdition := '';
 
       if Reg.ValueExists('App') then
         FExecutable := Reg.ReadString('App'); // do not localize
@@ -843,9 +897,14 @@ begin
     // read special environnment variables and their overwrite
     if Reg.OpenKeyReadOnly(RegistryKey + '\Environment Variables') then // do not localize
     begin
-      Reg.GetValueNames(FOrgEnvVars);
-      for i := 0 to FOrgEnvVars.Count - 1 do
-        FOrgEnvVars[i] := FOrgEnvVars[i] + '=' + Reg.ReadString(FOrgEnvVars[i]);
+      EnvVarNames := TStringList.Create;
+      try
+        Reg.GetValueNames(EnvVarNames);
+        for i := 0 to EnvVarNames.Count - 1 do
+          FOrgEnvVars.Add(EnvVarNames[i], Reg.ReadString(EnvVarNames[i]));
+      finally
+        EnvVarNames.Free;
+      end;
       FEnvVars.Assign(FOrgEnvVars);
       Reg.CloseKey;
     end;
@@ -1242,7 +1301,7 @@ begin
       Reg.CloseKey;
     end;
 
-    if FEnvVars.Text <> FOrgEnvVars.Text then
+    if not FEnvVars.Matches(FOrgEnvVars) then
     begin
       if Reg.OpenKey(RegistryKey + '\Environment Variables', True) then // do not localize
       begin
@@ -1298,8 +1357,8 @@ begin
     Result := SupportedPersonalities = Personalities
   else
     Result := SupportedPersonalities * Personalities = Personalities;
-  // there is no C++ Win64 personality yet
-  if (Personalities = [persBCB]) and IsBDS and (IDEVersion >= 9) and (FPlatform = ctpWin64) then
+  // C++ Win64 personality appeared with XE3
+  if (Personalities = [persBCB]) and IsBDS and (IDEVersion >= 9) and (IDEVersion < 11) and (FPlatform = ctpWin64) then
     Result := False;
 end;
 
@@ -1355,6 +1414,11 @@ begin
   Result := RootDir + '\Bin\bcc32.exe'; // do not localize
 end;
 
+function TCompileTarget.GetBcc64: string;
+begin
+  Result := RootDir + '\Bin\bcc64.exe'; // do not localize
+end;
+
 function TCompileTarget.GetIlink32: string;
 begin
   Result := RootDir + '\Bin\ilink32.exe'; // do not localize
@@ -1365,6 +1429,11 @@ begin
   Result := RootDir + '\Bin\tlib.exe'; // do not localize
 end;
 
+function TCompileTarget.HasBDE: Boolean;
+begin
+  Result := (Platform = ctpWin32) and ((Version < 21) or FileExists(PathAddSeparator(RootLibReleaseDir) + 'bdertl.dcp'));
+end;
+
 function TCompileTarget.GetDcpDir: string;
 begin
   Result := ExpandDirMacros(DCPOutputDir);
@@ -1373,7 +1442,7 @@ end;
 function TCompileTarget.GetEnvPath: string;
 begin
   if EnvVars.IndexOfName('PATH') = -1 then
-    Result := GetEnvironmentVariable('PATH')
+    Result := GlobalPathEnvVar
   else
     Result := FEnvVars.Values['PATH'];
 end;
@@ -1578,6 +1647,116 @@ end;
 function TDelphiPackage.GetName: string;
 begin
   Result := ExtractFileName(Filename);
+end;
+
+{ TEnvVarStrings }
+
+constructor TEnvVarStrings.Create;
+begin
+  inherited Create;
+  FItems := TStringList.Create;
+  FItems.Duplicates := dupIgnore;
+  FItems.Sorted := True;
+  //FItems.OwnsObjects := True;  older Delphi versions do not support this, so we do it ourself in Clear()
+end;
+
+destructor TEnvVarStrings.Destroy;
+begin
+  Clear;
+  FItems.Free;
+  inherited Destroy;
+end;
+
+procedure TEnvVarStrings.Clear;
+var
+  I: Integer;
+begin
+  for I := 0 to FItems.Count - 1 do
+    FItems.Objects[I].Free;
+  FItems.Clear;
+end;
+
+procedure TEnvVarStrings.Add(const AName, AValue: string);
+var
+  Item: TEnvVarStringItem;
+begin
+  Item := TEnvVarStringItem.Create;
+  Item.Value := AValue;
+  FItems.AddObject(AName, Item);
+end;
+
+procedure TEnvVarStrings.Assign(ASource: TEnvVarStrings);
+var
+  I: Integer;
+begin
+  Clear;
+  FItems.Clear;
+  if ASource <> nil then
+    for I := 0 to ASource.Count - 1 do
+      Add(ASource.Names[I], ASource.ValuesByIndex[I]);
+end;
+
+function TEnvVarStrings.GetCount: Integer;
+begin
+  Result := FItems.Count;
+end;
+
+function TEnvVarStrings.GetName(Index: Integer): string;
+begin
+  Result := FItems[Index];
+end;
+
+function TEnvVarStrings.GetValue(const Name: string): string;
+var
+  Index: Integer;
+begin
+  Index := IndexOfName(Name);
+  if Index <> -1 then
+    Result := ValuesByIndex[Index];
+end;
+
+procedure TEnvVarStrings.SetValue(const Name, Value: string);
+var
+  Index: Integer;
+begin
+  Index := IndexOfName(Name);
+  if Index = -1 then
+    Add(Name, Value)
+  else
+    ValuesByIndex[Index] := Value;
+end;
+
+function TEnvVarStrings.GetValueByIndex(Index: Integer): string;
+begin
+  Result := TEnvVarStringItem(FItems.Objects[Index]).Value;
+end;
+
+procedure TEnvVarStrings.SetValueByIndex(Index: Integer; const Value: string);
+begin
+  TEnvVarStringItem(FItems.Objects[Index]).Value := Value;
+end;
+
+function TEnvVarStrings.IndexOfName(const AName: string): Integer;
+begin
+  Result := FItems.IndexOf(AName);
+end;
+
+function TEnvVarStrings.Matches(AList: TEnvVarStrings): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  if (AList <> nil) and (Count = AList.Count) then
+  begin
+    for I := 0 to Count - 1 do
+    begin
+      if not SameText(FItems[I], AList.FItems[I]) then
+        Exit;
+      if ValuesByIndex[i] <> AList.ValuesByIndex[I] then
+        Exit;
+    end;
+    Result := True;
+  end;
 end;
 
 end.

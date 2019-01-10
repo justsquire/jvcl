@@ -880,8 +880,7 @@ begin
       C := Colors.Comment
     else
       C := Colors.PlainText;
-    // (rom) reenabled second part of if to handle two line DOCTYPE
-    if (FLong <> 0) and (FHighlighter <> hlHtml) then
+    if FLong <> 0 then
     begin
       Parser.pcPos := Parser.pcProgram + FindLongEnd + 1;
       if Parser.pcPos > Parser.pcProgram + Length(S) then
@@ -916,7 +915,7 @@ begin
   N := Min(Max_X, Length(S));
   for I := 2 to N do
     Move(LineAttrs[1], LineAttrs[I], SizeOf(LineAttrs[1]));
-  if Length(S) < Max_X then
+  if N + 1 <= Max_X then
   begin
     LineAttrs[N + 1].FC := Font.Color;
     LineAttrs[N + 1].Style := Font.Style;
@@ -1331,7 +1330,7 @@ begin
                     Break
                   else
                   begin
-                    if P[-1] = '*' then
+                    if (P > F) and (P[-1] = '*') then
                       FLong := lgNone;
                     I := P - F + 1;
                   end;
@@ -1398,7 +1397,7 @@ begin
                     Break
                   else
                   begin
-                    if P[-1] = '*' then
+                    if (P > F) and (P[-1] = '*') then
                       FLong := lgNone;
                     I := P - F + 1;
                   end;
@@ -1469,18 +1468,26 @@ begin
                 case S[I] of
                   '<':
                     begin
-                      P := StrScanNil(F + I, Char('>'));
-                      if P = nil then
+                      // Multiline comments in HTML
+                      if (I + 3 <= L1) and (S[I + 1] = '!') and (S[I + 2] = '-') and (S[I + 3] = '-') then
                       begin
-                        // Multiline comments in HTML
-                        if S[2] = '!' then
-                          FLong := lgComment1
-                        else
-                          FLong := lgTag;
-                        Break;
+                        FLong := lgComment1;
+                        P := F + I + 4 - 1;
+                        while (P[0] <> #0) and not ((P[0] = '-') and (P[1] = '-') and (P[2] = '>')) do
+                          Inc(P);
+                        I := P - F; // point to "-->" so that case lgComment1 can handle it
                       end
                       else
-                        I := P - F + 1;
+                      begin
+                        P := StrScanNil(F + I, Char('>'));
+                        if P = nil then
+                        begin
+                          FLong := lgTag;
+                          Break;
+                        end
+                        else
+                          I := P - F + 1;
+                      end;
                     end;
                 end;
               // Multiline comments in HTML
@@ -1490,7 +1497,7 @@ begin
                   if P = nil then
                     Break
                   else
-                    if (P[-2] = '-') and (P[-1] = '-') then
+                    if (P >= F + 2) and (P[-2] = '-') and (P[-1] = '-') then
                       FLong := lgNone;
                   I := P - F + 1;
                 end;
@@ -1586,7 +1593,7 @@ begin
                     Break
                   else
                   begin
-                    if P[-1] = '*' then
+                    if (P > F) and (P[-1] = '*') then
                       FLong := lgNone;
                     I := P - F + 1;
                   end;
@@ -1709,11 +1716,12 @@ begin
         // HTML multiline comments
         lgComment1:
           begin
+            F := P;
             P := StrScanNil(P, Char('>'));
             if P <> nil then
               // check if the previous characters are
               // --
-              if (P[-1] = '-') and (P[-2] = '-') then
+              if (P >= F + 2) and (P[-1] = '-') and (P[-2] = '-') then
                 Result := P - PChar(FLine);
           end;
         lgTag:
@@ -1747,7 +1755,7 @@ begin
     hlPython, hlPerl:
       S := #13'#"';
     hlHtml:
-      S := #13'<>';
+      S := #13'<>!-';
     hlCocoR:
       S := #13'*()/ ';
     hlSyntaxHighlighter:

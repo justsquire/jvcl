@@ -288,6 +288,7 @@ type
 
   TJvParameterList = class(TJvComponent)
   private
+    FHandleParameterEnabledCnt: Integer;
     FMessages: TJvParameterListMessages;
     FIntParameterList: TStringList;
     FArrangeSettings: TJvArrangeSettings;
@@ -314,7 +315,10 @@ type
     FShowParameterValidState: Boolean;
     function GetIntParameterList: TStrings;
     function AddObject(const S: string; AObject: TObject): Integer;
+    procedure DisableHandleParameterEnabled;
+    procedure EnableHandleParameterEnabled;
     function GetVisibleCount: Integer;
+    function IsHandleParameterEnabledDisabled: Boolean;
     procedure OnOkButtonClick(Sender: TObject);
     procedure OnCancelButtonClick(Sender: TObject);
     procedure ShowParameterDialogThread;
@@ -386,7 +390,7 @@ type
     { Creates the ParameterDialog }
     procedure CreateParameterDialog;
     { Checks the Disable/Enable-Reason of all Parameters }
-    procedure HandleEnableDisable;
+    procedure HandleParameterEnabled;
     {creates the components of all parameters on any WinControl}
     procedure CreateWinControlsOnParent(ParameterParent: TWinControl);
     {Destroy the WinControls of all parameters}
@@ -527,6 +531,14 @@ const
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_');
+
+
+//=== { Support function for DPI Aware apps } ================================
+
+function PPIScale(Value: Integer): Integer;
+begin
+  Result := MulDiv(Value, Screen.PixelsPerInch, 96);
+end;
 
 //=== { TJvParameterListMessages } ===========================================
 
@@ -824,6 +836,7 @@ begin
   FEnableReasons := TJvParameterListEnableDisableReasonList.Create;
   FDisableReasons := TJvParameterListEnableDisableReasonList.Create;
   FValue := null;
+  FAfterWincontrolPropertiesChangedDisabledCnt := 0;
 end;
 
 destructor TJvBaseParameter.Destroy;
@@ -1129,14 +1142,16 @@ end;
 
 procedure TJvBaseParameter.DisableAfterWincontrolPropertiesChanged;
 begin
-  Dec(FAfterWincontrolPropertiesChangedDisabledCnt);
-  if FAfterWincontrolPropertiesChangedDisabledCnt = 0 then SetAfterWincontrolPropertiesChangedDisabled(False);
+  Inc(FAfterWincontrolPropertiesChangedDisabledCnt);
+  if FAfterWincontrolPropertiesChangedDisabledCnt = 1 then
+    SetAfterWincontrolPropertiesChangedDisabled(False);
 end;
 
 procedure TJvBaseParameter.EnableAfterWincontrolPropertiesChanged;
 begin
-  Inc(FAfterWincontrolPropertiesChangedDisabledCnt);
-  if FAfterWincontrolPropertiesChangedDisabledCnt = 1 then SetAfterWincontrolPropertiesChangedDisabled(True);
+  Dec(FAfterWincontrolPropertiesChangedDisabledCnt);
+  if FAfterWincontrolPropertiesChangedDisabledCnt = 0 then
+    SetAfterWincontrolPropertiesChangedDisabled(True);
 end;
 
 function TJvBaseParameter.Validate(var AData: Variant): Boolean;
@@ -1234,15 +1249,15 @@ begin
   FArrangeSettings.AutoArrange := True;
   FArrangeSettings.WrapControls := True;
   FArrangeSettings.AutoSize := asBoth;
-  FArrangeSettings.DistanceVertical := 3;
-  FArrangeSettings.DistanceHorizontal := 3;
-  FArrangeSettings.BorderLeft := 5;
-  FArrangeSettings.BorderTop := 5;
+  FArrangeSettings.DistanceVertical := PPIScale(3);
+  FArrangeSettings.DistanceHorizontal := PPIScale(3);
+  FArrangeSettings.BorderLeft := PPIScale(5);
+  FArrangeSettings.BorderTop := PPIScale(5);
   ScrollBox := nil;
   RightPanel := nil;
   ArrangePanel := nil;
-  FMaxWidth := 600;
-  FMaxHeight := 400;
+  FMaxWidth := PPIScale(600);
+  FMaxHeight := PPIScale(400);
   FDefaultParameterHeight := 0;
   FDefaultParameterWidth := 0;
   FDefaultParameterLabelWidth := 0;
@@ -1255,6 +1270,7 @@ begin
   FOkButtonDisableReasons := TJvParameterListEnableDisableReasonList.Create;
   FOkButtonEnableReasons := TJvParameterListEnableDisableReasonList.Create;
   FShowParameterValidState := False;
+  FHandleParameterEnabledCnt := 0;
 end;
 
 destructor TJvParameterList.Destroy;
@@ -1455,7 +1471,7 @@ begin
           OnExitParameter(Parameters[I]);
         Break;
       end;
-  HandleEnableDisable;
+  HandleParameterEnabled;
   HandleShowValidState;
 end;
 
@@ -1473,7 +1489,7 @@ begin
           OnChangeParameter(Parameters[I]);
         Break;
       end;
-  HandleEnableDisable;
+  HandleParameterEnabled;
   HandleShowValidState;
 end;
 
@@ -1495,7 +1511,11 @@ begin
   TForm(ParameterDialog).DefaultMonitor := dmActiveForm;
   TForm(ParameterDialog).BorderStyle := bsDialog;
   TForm(ParameterDialog).FormStyle := fsNormal;
+  {$IFDEF COMPILER7_UP}
+  TForm(ParameterDialog).Position := poOwnerFormCenter;
+  {$ELSE}
   TForm(ParameterDialog).Position := poScreenCenter;
+  {$ENDIF COMPILER7_UP};
   TForm(ParameterDialog).ShowHint := True;
   TForm(ParameterDialog).OnShow := DialogShow;
 
@@ -1512,7 +1532,7 @@ begin
   MainPanel := DynControlEngine.CreatePanelControl(Self, ParameterDialog, 'MainPanel', '', alClient);
   if not Supports(MainPanel, IJvDynControlPanel, ITmpPanel) then
     raise EIntfCastError.CreateRes(@RsEIntfCastError);
-  ITmpPanel.ControlSetBorder(bvNone, bvRaised, 1, bsNone, 3);
+  ITmpPanel.ControlSetBorder(bvNone, bvRaised, 1, bsNone, PPIScale(3));
 
   ButtonPanel := DynControlEngine.CreatePanelControl(Self, BottomPanel, 'BottonPanel', '',
     alRight);
@@ -1526,26 +1546,28 @@ begin
     Messages.CancelButton, '',
     OnCancelButtonClick, False, True);
 
-  BottomPanel.Height := OkButton.Height + 6 + 2;
+  BottomPanel.Height := PPIScale(22) + PPIScale(6 + 2);
 
-  OkButton.Top := 3;
-  OkButton.Left := 3;
+  OkButton.Top := PPIScale(3);
+  OkButton.Left := PPIScale(3);
   OkButton.Visible := OkButtonVisible;
   OkButton.Enabled := OkButtonVisible;
+  OkButton.Height := PPIScale(22);
   if OkButton.Visible then
-    ButtonLeft := OkButton.Left + OkButton.Width + 3
+    ButtonLeft := OkButton.Left + OkButton.Width + PPIScale(3)
   else
     ButtonLeft := 0;
 
-  CancelButton.Top := 3;
-  CancelButton.Left := ButtonLeft + 3;
+  CancelButton.Top := PPIScale(3);
+  CancelButton.Left := ButtonLeft + PPIScale(3);
   CancelButton.Visible := CancelButtonVisible;
   CancelButton.Enabled := CancelButtonVisible;
+  CancelButton.Height := PPIScale(22);
   if CancelButton.Visible then
-    ButtonLeft := ButtonLeft + 3 + CancelButton.Width + 3;
+    ButtonLeft := ButtonLeft + PPIScale(3) + CancelButton.Width + PPIScale(3);
 
-  ButtonPanel.Width := ButtonLeft + 3;
-  OrgButtonPanelWidth := ButtonLeft + 3;
+  ButtonPanel.Width := ButtonLeft + PPIScale(3);
+  OrgButtonPanelWidth := ButtonLeft + PPIScale(3);
 
   OkButton.Anchors := [akTop, akRight];
   CancelButton.Anchors := [akTop, akRight];
@@ -1557,13 +1579,13 @@ begin
     if not Supports(HistoryPanel, IJvDynControlPanel, ITmpPanel) then
       raise EIntfCastError.CreateRes(@RsEIntfCastError);
     ITmpPanel.ControlSetBorder(bvNone, bvNone, 0, bsNone, 0);
-    HistoryPanel.Height := 25;
+    HistoryPanel.Height := PPIScale(25);
     LoadButton := DynControlEngine.CreateButton(Self, HistoryPanel, 'LoadButton',
       Messages.HistoryLoadButton, '',
       HistoryLoadClick, False, False);
-    LoadButton.Left := 6;
-    LoadButton.Top := 5;
-    LoadButton.Height := 20;
+    LoadButton.Left := PPIScale(6);
+    LoadButton.Top := PPIScale(5);
+    LoadButton.Height := PPIScale(20);
     LoadButton.Width :=
         TCustomControlAccessProtected(HistoryPanel).Canvas.TextWidth(Messages.HistoryLoadButton) + 5;
     ButtonLeft := LoadButton.Left + LoadButton.Width + 5;
@@ -1571,8 +1593,8 @@ begin
     Messages.HistorySaveButton, '',
     HistorySaveClick, False, False);
     SaveButton.Left := ButtonLeft;
-    SaveButton.Top := 5;
-    SaveButton.Height := 20;
+    SaveButton.Top := PPIScale(5);
+    SaveButton.Height := PPIScale(20);
     SaveButton.Width :=
       TCustomControlAccessProtected(HistoryPanel).Canvas.TextWidth(Messages.HistorySaveButton) + 5;
     ButtonLeft := SaveButton.Left + SaveButton.Width + 5;
@@ -1580,12 +1602,12 @@ begin
       Messages.HistoryClearButton, '',
       HistoryClearClick, False, False);
     ClearButton.Left := ButtonLeft;
-    ClearButton.Top := 5;
-    ClearButton.Height := 20;
+    ClearButton.Top := PPIScale(5);
+    ClearButton.Height := PPIScale(20);
     ClearButton.Width :=
       TCustomControlAccessProtected(HistoryPanel).Canvas.TextWidth(Messages.HistoryClearButton) +
-      5;
-    ButtonLeft := ClearButton.Left + ClearButton.Width + 5;
+      PPIScale(5);
+    ButtonLeft := ClearButton.Left + ClearButton.Width + PPIScale(5);
     HistoryPanel.Width := ButtonLeft;
     OrgHistoryPanelWidth := ButtonLeft;
   end
@@ -1606,9 +1628,9 @@ begin
         if ArrangePanel.Width > MaxWidth then
           TForm(ParameterDialog).ClientWidth := MaxWidth
         else
-          TForm(ParameterDialog).ClientWidth := ArrangePanel.Width + 5
+          TForm(ParameterDialog).ClientWidth := ArrangePanel.Width + PPIScale(5)
       else
-        TForm(ParameterDialog).ClientWidth := ArrangePanel.Width + 5;
+        TForm(ParameterDialog).ClientWidth := ArrangePanel.Width + PPIScale(5);
     if Assigned(HistoryPanel) and
       (TForm(ParameterDialog).ClientWidth < HistoryPanel.Width) then
       TForm(ParameterDialog).ClientWidth := HistoryPanel.Width
@@ -1619,17 +1641,17 @@ begin
         if ArrangePanel.Height + BottomPanel.Height > MaxHeight then
           TForm(ParameterDialog).ClientHeight := MaxHeight + 10
         else
-          TForm(ParameterDialog).ClientHeight := ArrangePanel.Height + BottomPanel.Height + 10
+          TForm(ParameterDialog).ClientHeight := ArrangePanel.Height + BottomPanel.Height + PPIScale(10)
       else
-        TForm(ParameterDialog).ClientHeight := ArrangePanel.Height + BottomPanel.Height + 10;
+        TForm(ParameterDialog).ClientHeight := ArrangePanel.Height + BottomPanel.Height + PPIScale(10);
   end;
 
   if Assigned(HistoryPanel) then
     if (OrgButtonPanelWidth + OrgHistoryPanelWidth) > BottomPanel.Width then
     begin
       ButtonPanel.Align := alBottom;
-      ButtonPanel.Height := OkButton.Height + 6 + 2;
-      BottomPanel.Height := ButtonPanel.Height * 2 + 1;
+      ButtonPanel.Height := OkButton.Height + PPIScale(6 + 2);
+      BottomPanel.Height := ButtonPanel.Height * 2 + PPIScale(1);
       HistoryPanel.Align := alClient;
     end
     else
@@ -1638,7 +1660,7 @@ begin
       ButtonPanel.Width := OrgButtonPanelWidth;
       HistoryPanel.Align := alLeft;
       HistoryPanel.Width := OrgHistoryPanelWidth;
-      BottomPanel.Height := OkButton.Height + 6 + 2;
+      BottomPanel.Height := OkButton.Height + PPIScale(6 + 2);
     end;
   CheckScrollBoxAutoScroll;
 end;
@@ -1834,24 +1856,33 @@ begin
   Result := IEnable;
 end;
 
-procedure TJvParameterList.HandleEnableDisable;
+procedure TJvParameterList.HandleParameterEnabled;
 var
   I: Integer;
   Parameter: TJvBaseParameter;
   IEnable: Integer;
 begin
-  for I := 0 to Count - 1 do
-    if Assigned(ParameterByIndex(I).WinControl) then
+  if IsHandleParameterEnabledDisabled then
+    Exit;
+  try
+    DisableHandleParameterEnabled;
+    for I := 0 to Count - 1 do
     begin
       Parameter := ParameterByIndex(I);
-      IEnable := GetEnableDisableReasonState(Parameter.DisableReasons, Parameter.EnableReasons);
-      case IEnable of
-        -1:
-          Parameter.Enabled := False;
-        1:
-          Parameter.Enabled := True;
+      if Assigned(Parameter.WinControl) then
+      begin
+        IEnable := GetEnableDisableReasonState(Parameter.DisableReasons, Parameter.EnableReasons);
+        case IEnable of
+          -1:
+            Parameter.Enabled := False;
+          1:
+            Parameter.Enabled := True;
+        end;
       end;
     end;
+  finally
+    EnableHandleParameterEnabled;
+  end;
 end;
 
 procedure TJvParameterList.CreateWinControlsOnParent(ParameterParent: TWinControl);
@@ -1859,6 +1890,7 @@ begin
   FreeAndNil(ScrollBox);
   ScrollBox := TScrollBox.Create(Self);
   ScrollBox.Parent := ParameterParent;
+  ScrollBox.Name := 'ParameterList_Scrollbox';
   ScrollBox.AutoScroll := False;
   ScrollBox.BorderStyle := bsNone;
   {$IFDEF COMPILER10_UP}
@@ -1869,6 +1901,7 @@ begin
   ScrollBox.Align := alClient;
   ScrollBox.Width := ParameterParent.Width;
   RightPanel := TJvPanel.Create(Self);
+  RightPanel.Name := 'ParameterList_RightPanel';
   RightPanel.Parent := ScrollBox;
   RightPanel.Align := alRight;
   RightPanel.BorderStyle := bsNone;
@@ -1879,7 +1912,7 @@ begin
   FreeAndNil(ArrangePanel);
   ArrangePanel := TJvPanel.Create(Self);
   ArrangePanel.Parent := ScrollBox;
-  ArrangePanel.Name := 'MainArrangePanel';
+  ArrangePanel.Name := 'ParameterList_MainArrangePanel';
   ArrangePanel.Align := alNone;
   ArrangePanel.BorderStyle := bsNone;
   ArrangePanel.BevelInner := bvNone;
@@ -1907,10 +1940,13 @@ var
   I: Integer;
   BeforeAfterParameterNames : TStringList;
 begin
+  if ParameterParent is TJvCustomArrangePanel then
+    TJvCustomArrangePanel(ParameterParent).DisableArrange;
   BeforeAfterParameterNames := TStringList.Create;
   BeforeAfterParameterNames.Sorted := True;
   BeforeAfterParameterNames.Duplicates := dupError;
   try
+    DisableHandleParameterEnabled;
     for I := 0 to Count - 1 do
       if (Parameters[I] is TJvBasePanelEditParameter) then
       begin
@@ -1951,15 +1987,19 @@ begin
         TJvArrangeParameter(Parameters[I]).EnableArrange;
         TJvArrangeParameter(Parameters[I]).ArrangeControls;
       end;
-    HandleEnableDisable;
-    HandleShowValidState;
   finally
     if ParameterParent is TJvCustomArrangePanel then
       TJvCustomArrangePanel(ParameterParent).EnableArrange;
     BeforeAfterParameterNames.Free;
+    EnableHandleParameterEnabled;
   end;
+  HandleParameterEnabled;
+  HandleShowValidState;
   if ParameterParent is TJvCustomArrangePanel then
+  begin
+    TJvCustomArrangePanel(ParameterParent).EnableArrange;
     TJvCustomArrangePanel(ParameterParent).ArrangeControls;
+  end;
 end;
 
 
@@ -2139,6 +2179,16 @@ end;
 type
   TAccessControl = class(TControl);
 
+procedure TJvParameterList.DisableHandleParameterEnabled;
+begin
+  Inc(FHandleParameterEnabledCnt);
+end;
+
+procedure TJvParameterList.EnableHandleParameterEnabled;
+begin
+  Dec(FHandleParameterEnabledCnt);
+end;
+
 procedure TJvParameterList.HandleShowValidState;
 var
   I: Integer;
@@ -2191,6 +2241,11 @@ end;
 function TJvParameterList.IndexOfParameter(AParameter: TJvBaseParameter): Integer;
 begin
   Result := IntParameterList.IndexOfObject(AParameter);
+end;
+
+function TJvParameterList.IsHandleParameterEnabledDisabled: Boolean;
+begin
+  Result := FHandleParameterEnabledCnt > 0;
 end;
 
 //=== { TJvParameterListPropertyStore } ======================================

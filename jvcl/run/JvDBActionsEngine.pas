@@ -70,13 +70,13 @@ type
     FLeft: Integer;
     FWidth: Integer;
     FHeight: Integer;
-    FArrangeConstraints: TSizeConstraints;
+    FArrangeConstraints: TJvDynControlSizeConstraints;
     FArrangeSettings: TJvArrangeSettings;
     FFieldCreateOptions: TJvCreateDBFieldsOnControlOptions;
     FIncludeNavigator: Boolean;
   protected
     procedure SetArrangeSettings(Value: TJvArrangeSettings);
-    procedure SetArrangeConstraints(Value: TSizeConstraints);
+    procedure SetArrangeConstraints(Value: TJvDynControlSizeConstraints);
     procedure SetFieldCreateOptions(Value: TJvCreateDBFieldsOnControlOptions);
   public
     constructor Create;
@@ -88,12 +88,12 @@ type
     property CancelButtonCaption: string read FCancelButtonCaption write FCancelButtonCaption;
     property CloseButtonCaption: string read FCloseButtonCaption write FCloseButtonCaption;
     property BorderStyle: TFormBorderStyle read FBorderStyle write FBorderStyle default bsDialog;
-    property Position: TPosition read FPosition write FPosition default poScreenCenter;
+    property Position: TPosition read FPosition write FPosition default {$IFDEF COMPILER7_UP} poOwnerFormCenter {$ELSE} poScreenCenter{$ENDIF COMPILER7_UP};
     property Top: Integer read FTop write FTop default 0;
     property Left: Integer read FLeft write FLeft default 0;
     property Width: Integer read FWidth write FWidth default 640;
     property Height: Integer read FHeight write FHeight default 480;
-    property ArrangeConstraints: TSizeConstraints read FArrangeConstraints write SetArrangeConstraints;
+    property ArrangeConstraints: TJvDynControlSizeConstraints read FArrangeConstraints write SetArrangeConstraints;
     property ArrangeSettings: TJvArrangeSettings read FArrangeSettings write SetArrangeSettings;
     property FieldCreateOptions: TJvCreateDBFieldsOnControlOptions read FFieldCreateOptions
       write SetFieldCreateOptions;
@@ -503,7 +503,7 @@ begin
   if (ASelectedRow >= 0) and (ASelectedRow < SelectedRowsCount(aActionComponent)) and
     Assigned(ds) and ds.Active then
   begin
-    ds.GotoBookmark(Pointer(TAccessCustomDBGrid(CustomDBGrid(aActionComponent)).SelectedRows[ASelectedRow]));
+    ds.GotoBookmark({$IFNDEF RTL200_UP}Pointer{$ENDIF ~RTL200_UP}(TAccessCustomDBGrid(CustomDBGrid(aActionComponent)).SelectedRows[ASelectedRow]));
     Result := True;
   end
   else
@@ -527,50 +527,49 @@ begin
   if Assigned(grid) then
   begin
     ds := grid.DataSource;
-//    with AFieldCreateOptions do
-      for I := 0 to TAccessCustomDBGrid(grid).ColCount - 2 do
+    for I := 0 to TAccessCustomDBGrid(grid).ColCount - 2 do
+    begin
+      Column := TAccessCustomDBGrid(grid).Columns[I];
+      if Column.Visible or AFieldCreateOptions.ShowInvisibleFields then
       begin
-        Column := TAccessCustomDBGrid(grid).Columns[I];
-        if Column.Visible or AFieldCreateOptions.ShowInvisibleFields then
+        Field := Column.Field;
+        Control := ADynControlEngineDB.CreateDBFieldControl(Field, AParentControl, AParentControl, '', ds);
+        Control.Enabled := Field.CanModify;
+        if AFieldCreateOptions.FieldDefaultWidth > 0 then
+          Control.Width := AFieldCreateOptions.FieldDefaultWidth
+        else
         begin
-          Field := Column.Field;
-          Control := ADynControlEngineDB.CreateDBFieldControl(Field, AParentControl, AParentControl, '', ds);
-          Control.Enabled := Field.CanModify;
-          if AFieldCreateOptions.FieldDefaultWidth > 0 then
-            Control.Width := AFieldCreateOptions.FieldDefaultWidth
+          if AFieldCreateOptions.UseFieldSizeForWidth then
+            if Field.Size > 0 then
+              Control.Width :=
+                TAccessCustomControl(AParentControl).Canvas.TextWidth('X') * Field.Size
+            else
+            begin
+              if (ADynControlEngineDB.GetFieldControlType(Field)= jctDBMemo) and
+               (AFieldCreateOptions.FieldMaxWidth > 0) then
+                Control.Width := AFieldCreateOptions.FieldMaxWidth;
+            end
           else
-          begin
-            if AFieldCreateOptions.UseFieldSizeForWidth then
-              if Field.Size > 0 then
-                Control.Width :=
-                  TAccessCustomControl(AParentControl).Canvas.TextWidth('X') * Field.Size
-              else
-              begin
-                if (ADynControlEngineDB.GetFieldControlType(Field)= jctDBMemo) and
-                 (AFieldCreateOptions.FieldMaxWidth > 0) then
-                  Control.Width := AFieldCreateOptions.FieldMaxWidth;
-              end
-            else
-              if Field.DisplayWidth > 0 then
-                Control.Width :=
-                  TAccessCustomControl(AParentControl).Canvas.TextWidth('X') * Field.DisplayWidth;
-            if (AFieldCreateOptions.FieldMaxWidth > 0) and (Control.Width > AFieldCreateOptions.FieldMaxWidth) then
-              Control.Width := AFieldCreateOptions.FieldMaxWidth
-            else
-              if (AFieldCreateOptions.FieldMinWidth > 0) and (Control.Width < AFieldCreateOptions.FieldMinWidth) then
-                Control.Width := AFieldCreateOptions.FieldMinWidth;
-          end;
-          if AFieldCreateOptions.UseParentColorForReadOnly then
-            if (Assigned(ds.DataSet) and not ds.DataSet.CanModify) or not Field.CanModify then
-              if isPublishedProp(Control, 'ParentColor') then
-                SetOrdProp(Control, 'ParentColor', Ord(True));
-          LabelControl := ADynControlEngineDB.DynControlEngine.CreateLabelControlPanel(AParentControl,
-            AParentControl, '', '&' + Column.Title.Caption, Control, True, 0);
-          if AFieldCreateOptions.FieldWidthStep > 0 then
-            if (LabelControl.Width mod AFieldCreateOptions.FieldWidthStep) <> 0 then
-              LabelControl.Width := ((LabelControl.Width div AFieldCreateOptions.FieldWidthStep) + 1) * AFieldCreateOptions.FieldWidthStep;
+            if Field.DisplayWidth > 0 then
+              Control.Width :=
+                TAccessCustomControl(AParentControl).Canvas.TextWidth('X') * Field.DisplayWidth;
+          if (AFieldCreateOptions.FieldMaxWidth > 0) and (Control.Width > AFieldCreateOptions.FieldMaxWidth) then
+            Control.Width := AFieldCreateOptions.FieldMaxWidth
+          else
+            if (AFieldCreateOptions.FieldMinWidth > 0) and (Control.Width < AFieldCreateOptions.FieldMinWidth) then
+              Control.Width := AFieldCreateOptions.FieldMinWidth;
         end;
+        if AFieldCreateOptions.UseParentColorForReadOnly then
+          if (Assigned(ds.DataSet) and not ds.DataSet.CanModify) or not Field.CanModify then
+            if isPublishedProp(Control, 'ParentColor') then
+              SetOrdProp(Control, 'ParentColor', Ord(True));
+        LabelControl := ADynControlEngineDB.DynControlEngine.CreateLabelControlPanel(AParentControl,
+          AParentControl, '', '&' + Column.Title.Caption, Control, True, 0);
+        if AFieldCreateOptions.FieldWidthStep > 0 then
+          if (LabelControl.Width mod AFieldCreateOptions.FieldWidthStep) <> 0 then
+            LabelControl.Width := ((LabelControl.Width div AFieldCreateOptions.FieldWidthStep) + 1) * AFieldCreateOptions.FieldWidthStep;
       end;
+    end;
   end;
 end;
 
@@ -728,18 +727,19 @@ begin
   FLeft := 0;
   FWidth := 640;
   FHeight := 480;
+  {$IFDEF COMPILER7_UP}
+  FPosition := poOwnerFormCenter;
+  {$ELSE}
   FPosition := poScreenCenter;
+  {$ENDIF COMPILER7_UP};  
   FArrangeSettings := TJvArrangeSettings.Create(Self);
-  with FArrangeSettings do
-  begin
-    AutoSize := asBoth;
-    DistanceHorizontal := 3;
-    DistanceVertical := 3;
-    BorderLeft := 3;
-    BorderTop := 3;
-    WrapControls := True;
-  end;
-  FArrangeConstraints := TSizeConstraints.Create(nil);
+  FArrangeSettings.AutoSize := asBoth;
+  FArrangeSettings.DistanceHorizontal := 3;
+  FArrangeSettings.DistanceVertical := 3;
+  FArrangeSettings.BorderLeft := 3;
+  FArrangeSettings.BorderTop := 3;
+  FArrangeSettings.WrapControls := True;
+  FArrangeConstraints := TJvDynControlSizeConstraints.Create;
   FArrangeConstraints.MaxHeight := 480;
   FArrangeConstraints.MaxWidth := 640;
   FFieldCreateOptions := TJvCreateDBFieldsOnControlOptions.Create;
@@ -759,7 +759,7 @@ begin
   FArrangeSettings.Assign(Value);
 end;
 
-procedure TJvShowSingleRecordWindowOptions.SetArrangeConstraints(Value: TSizeConstraints);
+procedure TJvShowSingleRecordWindowOptions.SetArrangeConstraints(Value: TJvDynControlSizeConstraints);
 begin
   FArrangeConstraints.Assign(Value);
 end;

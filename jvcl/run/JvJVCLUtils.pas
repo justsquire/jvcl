@@ -636,6 +636,8 @@ function JvMessageBox(const Text: string; Flags: DWORD): Integer; overload;
 { end JvCtrlUtils }
 
 procedure UpdateTrackFont(TrackFont, Font: TFont; TrackOptions: TJvTrackFontOptions);
+function IsHotTrackFontDfmStored(TrackFont, Font: TFont; TrackOptions: TJvTrackFontOptions): Boolean;
+
 // Returns the size of the image
 // used for checkboxes and radiobuttons.
 // Originally from Mike Lischke
@@ -684,25 +686,28 @@ function SelectColorByLuminance(AColor, DarkColor, BrightColor: TColor): TColor;
 type
   TJvHTMLCalcType = (htmlShow, htmlCalcWidth, htmlCalcHeight, htmlHyperLink);
 
+const
+  DefaultSuperSubScriptRatio = 2/3;
+
 procedure HTMLDrawTextEx(Canvas: TCanvas; Rect: TRect;
   const State: TOwnerDrawState; const Text: string; var Width: Integer;
   CalcType: TJvHTMLCalcType;  MouseX, MouseY: Integer; var MouseOnLink: Boolean;
-  var LinkName: string; SuperSubScriptRatio: Double; Scale: Integer = 100); overload;
+  var LinkName: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100); overload;
 procedure HTMLDrawTextEx(Canvas: TCanvas; Rect: TRect;
   const State: TOwnerDrawState; const Text: string; var Width, Height: Integer;
   CalcType: TJvHTMLCalcType;  MouseX, MouseY: Integer; var MouseOnLink: Boolean;
-  var LinkName: string; SuperSubScriptRatio: Double; Scale: Integer = 100); overload;
+  var LinkName: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100); overload;
 function HTMLDrawText(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): string;
+  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100): string;
 function HTMLDrawTextHL(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; MouseX, MouseY: Integer; SuperSubScriptRatio: Double; 
+  const State: TOwnerDrawState; const Text: string; MouseX, MouseY: Integer; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; 
   Scale: Integer = 100): string;
 function HTMLPlainText(const Text: string): string;
 function HTMLTextExtent(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): TSize;
+  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100): TSize;
 function HTMLTextWidth(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): Integer;
-function HTMLTextHeight(Canvas: TCanvas; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): Integer;
+  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100): Integer;
+function HTMLTextHeight(Canvas: TCanvas; const Text: string; SuperSubScriptRatio: Double = DefaultSuperSubScriptRatio; Scale: Integer = 100): Integer;
 function HTMLPrepareText(const Text: string): string;
 
 // This type is used to allow an easy migration from a TBitmap property to a
@@ -2080,17 +2085,20 @@ end;
 
 function PointInPolyRgn(const P: TPoint; const Points: array of TPoint):
   Boolean;
-type
-  PPoints = ^TPoints;
-  TPoints = array [0..0] of TPoint;
 var
   Rgn: HRGN;
+  Count: Integer;
 begin
-  Rgn := CreatePolygonRgn(PPoints(@Points)^, High(Points) + 1, WINDING);
-  try
-    Result := PtInRegion(Rgn, P.X, P.Y);
-  finally
-    DeleteObject(Rgn);
+  Count := Length(Points);
+  Result := Count > 0;
+  if Result then
+  begin
+    Rgn := CreatePolygonRgn(Points[0], Count, WINDING);
+    try
+      Result := PtInRegion(Rgn, P.X, P.Y);
+    finally
+      DeleteObject(Rgn);
+    end;
   end;
 end;
 
@@ -2573,7 +2581,7 @@ function LoadOLEDragCursors: Boolean;
 const
   cOle32DLL = 'ole32.dll';
 var
-  Handle: Cardinal;
+  Handle: HMODULE;
 begin
   if OLEDragCursorsLoaded then
   begin
@@ -5284,7 +5292,9 @@ var
   ColorCount: Integer;
   SourceBitmapFormat: TPixelFormat;
 begin
+  {$IFNDEF COMPILER25_UP}
   Result := nil;
+  {$ENDIF ~COMPILER25_UP}
   if Bitmap.Handle = 0 then
     InvalidBitmap;
   SourceBitmapFormat := GetBitmapPixelFormat(Bitmap);
@@ -5927,6 +5937,36 @@ begin
   end;
 end;
 
+function IsHotTrackFontDfmStored(TrackFont, Font: TFont; TrackOptions: TJvTrackFontOptions): Boolean;
+var
+  DefFont: TFont;
+begin
+  if hoFollowFont in TrackOptions then
+    DefFont := nil
+  else
+  begin
+    DefFont := TFont.Create;
+    Font := DefFont;
+    TrackOptions := []; // compare all
+  end;
+  try
+    Result := ((hoPreserveCharSet in TrackOptions) and (TrackFont.Charset <> Font.Charset)) or
+              ((hoPreserveColor in TrackOptions) and (TrackFont.Color <> Font.Color)) or
+              ((hoPreserveHeight in TrackOptions) and (TrackFont.Height <> Font.Height)) or
+              ((hoPreservePitch in TrackOptions) and (TrackFont.Pitch <> Font.Pitch)) or
+              ((hoPreserveStyle in TrackOptions) and (TrackFont.Style <> Font.Style)) or
+              {$IFDEF COMPILER10_UP}
+              ((hoPreserveOrientation in TrackOptions) and (TrackFont.Orientation <> Font.Orientation)) or
+              {$ENDIF COMPILER10_UP}
+              {$IFDEF COMPILER15_UP}
+              ((hoPreserveQuality in TrackOptions) and (TrackFont.Quality <> Font.Quality)) or
+              {$ENDIF COMPILER15_UP}
+              ((hoPreserveName in TrackOptions) and (TrackFont.Name <> Font.Name));
+  finally
+    DefFont.Free;
+  end;
+end;
+
 { end JvCtrlUtils }
 
 function GetDefaultCheckBoxSize: TSize;
@@ -6014,7 +6054,7 @@ begin
   begin
     SetWindowLongPtr(Result, 0, LONG_PTR(TMethod(Method).Code));
     SetWindowLongPtr(Result, SizeOf(TMethod(Method).Code), LONG_PTR(TMethod(Method).Data));
-    SetWindowLongPtr(Result, GWL_WNDPROC, LONG_PTR(@StdWndProc));
+    SetWindowLongPtr(Result, GWLP_WNDPROC, LONG_PTR(@StdWndProc));
   end;
 end;
 
@@ -7082,7 +7122,7 @@ begin
 end;
 
 function HTMLTextExtent(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): TSize;
+  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer): TSize;
 var
   S: Boolean;
   St: string;
@@ -7094,7 +7134,7 @@ begin
 end;
 
 function HTMLTextWidth(Canvas: TCanvas; Rect: TRect;
-  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): Integer;
+  const State: TOwnerDrawState; const Text: string; SuperSubScriptRatio: Double; Scale: Integer): Integer;
 var
   S: Boolean;
   St: string;
@@ -7102,7 +7142,7 @@ begin
   HTMLDrawTextEx(Canvas, Rect, State, Text, Result, htmlCalcWidth, 0, 0, S, St, SuperSubScriptRatio, Scale);
 end;
 
-function HTMLTextHeight(Canvas: TCanvas; const Text: string; SuperSubScriptRatio: Double; Scale: Integer = 100): Integer;
+function HTMLTextHeight(Canvas: TCanvas; const Text: string; SuperSubScriptRatio: Double; Scale: Integer): Integer;
 var
   S: Boolean;
   St: string;
